@@ -17,7 +17,7 @@ import argparse
 import sys
 import os
 
-sys.path.append('/home/ucl/cp3/kjaffel/bamboodev/ZA_FullAnalysis/bamboo_')
+sys.path.append('/home/ucl/cp3/kjaffel/bamboodev/b-taggingEfficienciesMeasurment')
 import utils
 
 binningVariables = {
@@ -27,10 +27,6 @@ binningVariables = {
     , "AbsClusEta": lambda obj : op.abs(obj.eta + obj.deltaEtaSC)
     , "Pt"        : lambda obj : obj.pt
     }
-
-# scale factors
-#def localizeSF(aPath, era="FullRunIIv1"):
-#    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors_{0}".format(era), aPath)
 
 def localizeSF(aPath, era="2018"):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors", era, aPath)
@@ -55,13 +51,6 @@ def getScaleFactor(objType, key, periods=None, combine=None, isElectron=False, s
                                         sfLib=myScaleFactors, paramDefs=scalefactors.binningVariables_nano,
                                         isElectron=isElectron, systName=systName)
 
-#def get_scalefactor(objType, key, periods=None, combine=None, additionalVariables=dict(), getFlavour=None, systName=None):
-#    return scalefactors.get_scalefactor(objType, key, periods=periods, combine=combine, 
-#                                        additionalVariables=additionalVariables, 
-#                                        sfLib=all_scalefactors, 
-#                                        paramDefs=binningVariables, 
-#                                        getFlavour=getFlavour,
-#                                        systName=systName)
 
 def safeget(dct, *keys):
     for key in keys:
@@ -206,7 +195,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         try:
             configureType1MET(getattr(tree, f"_{metName}"), jec=jec, smear=smear, jesUncertaintySources=jesUncertaintySources, mayWriteCache=isNotWorker, isMC=isMC, backend=be, uName=sample)
         except Exception as ex:
-            logger.exception("Problem plotopts=utils.getOpts(uname)plotopts=utils.getOpts(uname)while configuring MET correction and variations")
+            logger.exception("Problem while configuring MET correction and variations")
         
         
         if self.isMC(sample):
@@ -364,7 +353,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             for key in sel.keys():
                 tagger=key.replace(wp, "")
                 bjets_ = safeget(bjets, tagger, wp)
-                print(key)
                 for i in range(2):
                     plots.append(Plot.make1D(f"{uname}_bJet{i+1}_pT_{key}".format(key=key), 
                                 bjets_[i].pt,
@@ -394,20 +382,21 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                  
                 tagger=key.replace(wp, "")
                 bjets_ = safeget(bjets, tagger, wp)
-                # FIXME add plot for L, M, T discr in 0, 1, 2 bin respec
+                idx = ( 0 if wp=="L" else ( 1 if wp=="M" else 2))
+                bin0 = btaggingWPs[tagger][era][idx]
                 for i in range(2):
                     if tagger =="DeepFlavour":
                         plots.append(Plot.make1D(f"{uname}_jet{i+1}_discr_deepFlav{wp}", 
                                         bjets_[i].btagDeepFlavB,
                                         safeget(sel, "DeepFlavour{0}".format(wp)),
-                                        EqBin(60, 0., 1.), 
+                                        EqBin(60, bin0, 1.), 
                                         title="DeepFlavourBDisc {0}".format(wp), 
                                         plotopts=utils.getOpts(uname.lower())))
                     else:
                         plots.append(Plot.make1D(f"{uname}_jet{i+1}_discr_deepCSV{wp}", 
                                         bjets_[i].btagDeepB,
                                         safeget(sel, "DeepCSV{0}".format(wp)),
-                                        EqBin(60, 0., 1.), 
+                                        EqBin(60, bin0, 1.), 
                                         title= "DeepCSVBDisc {0}".format(wp), 
                                         plotopts=utils.getOpts(uname.lower())))
     
@@ -435,7 +424,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             binScaling=1
             plots=[]
             plots.append(Plot.make1D(f"{uname}_Jet_mulmtiplicity", op.rng_len(jets), sel,
-                            EqBin(50 // binScaling, 0., 8.), title="Jet mulmtiplicity",
+                            EqBin(10, 2., 8.), title="Jet mulmtiplicity",
                             plotopts=utils.getOpts(uname)))
             plots.append(Plot.make1D(f"{uname}_nVX", 
                             t.PV.npvs, sel, 
@@ -524,30 +513,38 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             flavour1=(bjets_[0].hadronFlavour)
             flavour2=(bjets_[1].hadronFlavour)
 
-            TwobjetsFlav_mctruth= [flavour1 == 5, flavour2 == 5]
-            
-            TwojetsFlav_2btagged_oneatleast_l_or_c_mctruth: {
+            TwoTagCrossFlavour= {
+                    # both are bhadron : at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
+                    #"2b"   : [flavour1 == 5, flavour2 == 5],
+                    # these catgories  : both jet are btagged --> but one at least is light or charm hadron falv
                     "1b_1c": [flavour1==5,  flavour2==4],
                     "1b_1l": [flavour1==5, (flavour2==21 or (flavour2>0 and flavour2<4))],
                     "1c_1l": [flavour1==4, (flavour2==21 or (flavour2>0 and flavour2<4))],
                     "2c"   : [flavour1==4,  flavour2==4],
-                    "2b"   : [(flavour1==21 or (flavour1>0 and flavour1<4)), (flavour2==21 or (flavour2>0 and flavour2<4))]
+                    "2l"   : [(flavour1==21 or (flavour1>0 and flavour1<4)), (flavour2==21 or (flavour2>0 and flavour2<4))]
                     }
-            
-            n2bjets = Plot.make1D("{0}_Events_with2bJet_truthFlav_pass_{1}_{2}".format(uname, key, ptBin),
-                                (bjets_[0].hadronFlavour if isMC else op.c_int(6)),#+ bjets_[1].hadronFlavour),
-                                sel.get(key).refine("{0}_2bjet_truthFlav_pass_{1}_{2}".format(uname, key, ptBin), cut=(TwobjetsFlav_mctruth if isMC else None)),
-                                EqBin(10, 0., 10.),
-                                title="N b-tags (mc truth)",
-                                plotopts=utils.getOpts(uname))
 
-            non2bjets_2btagged = Plot.make1D("{uname}_Events_with2bJet_2btagged_oneatleast_Light_OR_Charm_pass_{1}_{2}".format(uname, key, ptBin),
-                                (bjets_[0].hadronFlavour + bjets_[1].hadronFlavour),
-                                sel.get(key).refine("{0}_2bjet_oneatleast_l_or_c_truthFlav_pass_{1}_{2}".format(uname, key, ptBin), cut=op.OR(*chain.from_iterable(TwojetsFlav_2btagged_oneatleast_l_or_c_mctruth.values()))),
-                                EqBin(2., 4., 6.),
-                                title="N b-tags (mc truth)",
-                                plotopts=utils.getOpts(uname))
-                    
+            n2bjets_mctruth = Plot.make1D("{0}_Events_with2bJet_truthFlav_pass_{1}_{2}".format(uname, key, ptBin),
+                                    op.AND(flavour1 == 5, flavour2 == 5),
+                                    sel.get(key),
+                                    EqBin(2, 0., 2.),
+                                    title="N b-tags (mc truth)",
+                                    plotopts=utils.getOpts(uname))
+
+            non2bjets_2btagged = Plot.make1D("{0}_Events_with2bJet_2btagged_oneatleast_Light_OR_Charm_pass_{1}_{2}".format(uname, key, ptBin),
+                                    op.OR(*chain.from_iterable(TwoTagCrossFlavour.values())),
+                                    sel.get(key),
+                                    EqBin(2, 0., 2.),
+                                    title="N b-tags (mc truth)",
+                                    plotopts=utils.getOpts(uname))
+            
+            plots.append(n2bjets_mctruth)
+            plots.append(non2bjets_2btagged)
+            plots.append(SummedPlot("{0}".format(histosName),
+                                    [non2bjets_2btagged, n2bjets_mctruth],
+                                    title="N b-tags (mc truth)",
+                                    plotopts=utils.getOpts(uname))
+
             return plots 
 
 
@@ -569,7 +566,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             btag2 = ReturnVarAtIndex(tagger,WP,bjets, 1)
             
             nPassWPs={}
-            print ("*********************", tagger, era, WP, iWP, btaggingWPs[tagger][era][iWP])
             for iWP, key in enumerate(btaggingWPs.keys()):
                 nPassWPs[iWP]= (btag1>btaggingWPs[tagger][era][iWP])
                 nPassWPs[iWP]= (btag2>btaggingWPs[tagger][era][iWP])
@@ -640,11 +636,12 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 plots.extend(makeDiscriminatorPlots(TwoLeptonsTwoBjets, bjets, WP, channel))
                 
             # TwoTag Count Method --> start filling crossFlavour histograms
-                for key in TwoLeptonsTwoBjets.keys():
-                    tagger=key.replace(WP, "")
-                    bjets_=safeget(bjets, tagger, WP)
-                    for iPT in range(-1,len(lowerPtBinEdges)):
-                        histosName = channel+"_only2_twoTags_"+ key + "_"+ ReturnPtLabel(iPT)
-                        TwoTagCount(channel, histosName, key, bjets_, TwoLeptonsTwoBjets, ReturnPtLabel(iPT))
+                if isMC:
+                    for key in TwoLeptonsTwoBjets.keys():
+                        tagger=key.replace(WP, "")
+                        bjets_=safeget(bjets, tagger, WP)
+                        for iPT in range(-1,len(lowerPtBinEdges)):
+                            histosName = channel+"_only2_twoTags_"+ key + "_"+ ReturnPtLabel(iPT)
+                            TwoTagCount(channel, histosName, key, bjets_, TwoLeptonsTwoBjets, ReturnPtLabel(iPT))
 
             return plots
