@@ -8,7 +8,7 @@ samples:
     db: das:/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM
     files: dascache/bTaggingEff/TTToSemiLeptonic_2018.dat
     generated-events: 'genEventSumw'
-    cross-section:  365.34 # +- +4.8%-6.1%  pb
+    cross-section:  365.34 #  +4.8%-6.1%  pb
     group: TTJets_SL
     era: '2018'
     split: 4
@@ -71,8 +71,7 @@ samples:
   
 
   DYJetsToLL_M-50-amcatnloFXFX:
-    #FIXME phedex request done, to check if i need to add it  : /DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM
-    db: das:/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM
+    db: das:[/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM, /DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM]
     files: dascache/bTaggingEff/DYJetsToLL_M-50-amcatnloFXFX_2018.dat
     generated-events: 'genEventSumw'
     cross-section: 6529.0  # +- 28.29 pb 
@@ -84,7 +83,7 @@ samples:
     db: das:/WW_TuneCP5_13TeV-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM      
     files: dascache/bTaggingEff/WW_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 75.8
+    cross-section: 75.8 # +- 0.1123  pb
     group: WW
     era: '2018'
     split: 4
@@ -94,7 +93,7 @@ samples:
     db: das:/WZ_TuneCP5_13TeV-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM
     files: dascache/bTaggingEff/WZ_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 27.6
+    cross-section: 27.6 # +- 0.04 pb
     group: WZ
     era: '2018'
     split: 4
@@ -104,7 +103,7 @@ samples:
     db: das:/ZZ_TuneCP5_13TeV-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM 
     files: dascache/bTaggingEff/ZZ_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 12.14
+    cross-section: 12.14 # +- 0.01964 pb
     group: ZZ
     era: '2018'
     split: 4
@@ -113,7 +112,7 @@ samples:
     db: das:/W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM 
     files: dascache/bTaggingEff/W2JetsToLNu_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 2793.0 
+    cross-section: 2793.0 # +-8.074 pb 
     group: WPLusJets
     era: '2018'
     split: 4
@@ -123,7 +122,7 @@ samples:
     db: das:/W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM
     files: dascache/bTaggingEff/W3JetsToLNu_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 992.5
+    cross-section: 992.5 # +- 3.012 pb
     group: WPlusJets
     era: '2018'
     split: 4
@@ -133,7 +132,7 @@ samples:
     db: das:/W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM
     files: dascache/bTaggingEff/W4JetsToLNu_2018.dat
     generated-events: 'genEventSumw'
-    cross-section: 544.3
+    cross-section: 544.3 # +- 1.656
     group: WPlusJets
     era: '2018'
     split: 4
@@ -184,45 +183,45 @@ plotIt:
   groups:
     data:
       legend: data
-    WPlusJets:
-      fill-color: "#5e2036"
-      legend: WPlusJets
-      order: 10
-    WW:
-      fill-color: "#5e2036"
-      legend: WW
-      order: 6
-    WZ:
-      fill-color: "#5e2036"
-      legend: WZ
-      order: 8
-    ZZ:
-      fill-color: "#5e2036"
-      legend: ZZ
-      order: 7
-    TTJets_SL:
-      fill-color: "#5e2036"
-      legend: TTJets_SL
-      order: 5
     TTJets_DL:
       fill-color: "#9e7986"
       legend: TTJets_DL
       order: 10
-    TTJets_AH:
-      fill-color: "#364740"
-      legend: TTJets_AH
-      order: 4
     tW:
       fill-color: "#2f3c51"
       legend: tW
-      order: 3
+      order: 9
     atW:
       fill-color: "#62434f"
       legend: atW
-      order: 2
+      order: 8
     DY:
       fill-color: "#7f0000"
       legend: DY
+      order: 7
+    TTJets_AH:
+      fill-color: "#D4D2D5"
+      legend: TTJets_AH
+      order: 6
+    WPlusJets:
+      fill-color: "#64558A"
+      legend: WPlusJets
+      order: 5
+    TTJets_SL:
+      fill-color: "#5e2036"
+      legend: TTJets_SL
+      order: 4
+    WW:
+      fill-color: "#9ADCFE"
+      legend: WW
+      order: 3
+    ZZ:
+      fill-color: "#7C818C"
+      legend: ZZ
+      order: 2
+    WZ:
+      fill-color: "#E8A53A"
+      legend: WZ
       order: 1
   systematics:
       # on the jets
@@ -235,21 +234,22 @@ plotIt:
       - muon_iso
       - ele_reco 
       - ele_ID
+      # on double leptons (opposite sign, opposite flavour ) trigger 
+      - elmutrig
+      - mueltrig
       # on single lepton trigger 
-      - ele_trigger
-      - muon_trigger
+      #- ele_trigger
+      #- muon_trigger
       # on the cross section : 1+xsec_uncert(pb)/xsec(pb)
       #-TTToSemiLeptonicxsc: {type: const, value: , on: 'TTToSemiLeptonic'}
       #-TTToFullLeptonicxsc: {type: const, value: , on: 'TTToFullLeptonic'}
-      #-TTToHadronicxsc: {type: const, value: , on: 'TTToHadronic'}
-      #-ST_tW_top_5fxsc: {type: const, value: , on: 'ST_tW_top_5f'}
-      #-ST_tW_antitop_5fxsc: {type: const, value: , on: 'ST_tW_antitop_5f'}
-      #-DYJetsToLL_M-10to50-madgraphMLMxsc: {type: const, value: , on: 'DYJetsToLL_M-10to50-madgraphMLM'}
-      #-DYJetsToLL_M-50-madgraphMLMxsc: {type: const, value: , on: 'DYJetsToLL_M-50-madgraphMLM'}
-      #-DYJetsToLL_M-50-amcatnloFXFXxsc: {type: const, value: , on: 'DYJetsToLL_M-50-amcatnloFXFX'}
-      #-WWxsc: {type: const, value:  , on:'WW'}
-      #-WZxsc: {type: const, value:  , on:'WZ'}
-      #-ZZxsc: {type: const, value:  , on:'ZZ'}
-      #-W2JetsToLNuxsc: {type: const, value:  , on:'W2JetsToLNu'}
-      #-W3JetsToLNuxsc: type: const, value:  , on:'W3JetsToLNu'}
-      #-W4JetsToLNuxsc: {type: const, value: , on:'W4JetsToLNu'}
+      - TTToHadronicxsc: {type: const, value: 1.0148209682 , on: ' TTToHadronic '}
+      - ST_tW_top_5fxsc: {type: const, value: 1.00080554761 , on: ' ST_tW_top_5f '}
+      - ST_tW_antitop_5fxsc: {type: const, value: 1.00000178811 , on: ' ST_tW_antitop_5f '}
+      - DYJetsToLL_M-50-amcatnloFXFXxsc: {type: const, value: 1.00433297595 , on: ' DYJetsToLL_M-50-amcatnloFXFX '}
+      - W2JetsToLNuxsc: {type: const, value: 1.00289079842 , on: ' W2JetsToLNu '}
+      - W3JetsToLNuxsc: {type: const, value: 1.00303476071 , on: ' W3JetsToLNu '}
+      - W4JetsToLNuxsc: {type: const, value: 1.00304243983 , on: ' W4JetsToLNu '}
+      - WWxsc: {type: const, value: 1.00148153034 , on: ' WW '}
+      - WZxsc: {type: const, value: 1.00144927536 , on: ' WZ '}
+      - ZZxsc: {type: const, value: 1.00161779242 , on: ' ZZ '}
