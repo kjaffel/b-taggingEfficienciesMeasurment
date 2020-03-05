@@ -31,18 +31,31 @@ binningVariables = {
 def localizeSF(aPath, era="2018"):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors", era, aPath)
 
+def localize_trigger(aPath):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "TriggerEfficienciesStudies", aPath)
 
 myScaleFactors = {
     "2018": {
+            #***********  leptons ID , ISO , Scales Factors **************************
             "electron_ID": {"cut_medium": localizeSF("Electron_EGamma_SF2D_2018_Medium_Fall17V2.json", "2018")},
             "electron_reco": localizeSF("Electron_EGamma_SF2D_Reco.json", "2018"),
-            "electron_trigger": localizeSF("Electron_ele28_ht150_OR_ele32_etaCut.json", "2018"),
-            # "electron_trigger": localizeSF("Electron_ele28_ht150_OR_ele32.json", "2018"),
-            "muon_ID": localizeSF("Muon_NUM_MediumID_DEN_TrackerMuons_pt_abseta_syst_2018RunABCD.json", "2018"),
-            "muon_iso": localizeSF("Muon_NUM_TightRelIso_DEN_MediumID_pt_abseta_syst_2018RunABCD.json", "2018"),
-            "muon_trigger": [(["Run315264to316360"], localizeSF("Muon_IsoMu24_BeforeMuonHLTUpdate.json", "2018")),
-            (["Run316361to325175"], localizeSF("Muon_IsoMu24_AfterMuonHLTUpdate.json", "2018"))],
+            "muon_ID": {"cut_medium": localizeSF("Muon_NUM_MediumID_DEN_TrackerMuons_pt_abseta_{uncer}_2018RunABCD.json".format(uncer=uncer), "2018") for uncer in ("syst", "stat")},
+            "muon_iso":{"iso_tight_id_medium": localizeSF("Muon_NUM_TightRelIso_DEN_MediumID_pt_abseta_{uncer}_2018RunABCD.json".format(uncer=uncer), "2018") for uncer in ("syst", "stat")},
             },
+            #************ Trigger Scales Factors **********************************
+            # single leptons trigger  
+            "electron_trigger": localize_trigger("Electron_ele28_ht150_OR_ele32_etaCut.json"),
+            #"electron_trigger": localize_trigger("Electron_ele28_ht150_OR_ele32.json", "2018"),
+            "muon_trigger" :tuple(localize_trigger("{trig}_PtEtaBins_2018AfterMuonHLTUpdate.json".format(trig=trig))
+                             for trig in ("IsoMu24_OR_IsoTkMu24","Mu50_OR_OldMu100_OR_TkMu100" )),
+            #"muon_trigger": [(["Run315264to316360"], localize_trigger("Muon_IsoMu24_BeforeMuonHLTUpdate.json")),
+                             #(["Run316361to325175"], localize_trigger("Muon_IsoMu24_AfterMuonHLTUpdate.json"))],
+            # FIXME these are old versions should be updated ! can be passed to all eras
+            # double leptons trigger 
+            "mueleLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp)) 
+                                          for wp in ("Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
+            "elemuLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp)) 
+                                          for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg")),
     }
 
     # fill in some defaults: myScalefactors and bamboo.scalefactors.binningVariables_nano
@@ -50,7 +63,6 @@ def getScaleFactor(objType, key, periods=None, combine=None, isElectron=False, s
     return scalefactors.get_scalefactor(objType, key, combine=combine,
                                         sfLib=myScaleFactors, paramDefs=scalefactors.binningVariables_nano,
                                         isElectron=isElectron, systName=systName)
-
 
 def safeget(dct, *keys):
     for key in keys:
@@ -159,15 +171,8 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                 tree.HLT.Mu50, 
                                 tree.HLT.OldMu100, 
                                 tree.HLT.TkMu100 ], 
-
-                "DoubleMuon" : [ tree.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL,
-                                 tree.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ,
-                                 tree.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8, #  - Unprescaled for the whole year 
-                                 tree.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 ],
-                
-                "EGamma"     : [ tree.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL ], 
-
                 }
+
             if self.isMC(sample):
                 jec="Autumn18_V8_MC"
                 smear="Autumn18_V1_MC"
@@ -208,8 +213,8 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
     def definePlots(self, t, noSel, sample=None, sampleCfg=None):    
 
         from bamboo.analysisutils import forceDefine
-        from bamboo.plots import Plot
         from bamboo.plots import EquidistantBinning as EqBin
+        from bamboo.plots import Plot, SummedPlot
         from bamboo import treefunctions as op
 
         era = sampleCfg.get("era") if sampleCfg else None
@@ -230,17 +235,18 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         sorted_muons = op.sort(t.Muon, lambda mu : -mu.pt)
         muons = op.select(sorted_muons, lambda mu : op.AND(mu.pt > 20., op.abs(mu.eta) < 2.4, mu.mediumId, mu.pfRelIso04_all<0.15, op.abs(mu.sip3d) < 4.))
                      
-        muonIDSF = getScaleFactor("lepton", (era, "muon_ID"), systName="muon_ID")
-        muonIsoSF = getScaleFactor("lepton", (era, "muon_iso"), systName="muon_iso")
-        #muonTriggerSF = getScaleFactor("lepton", (era, "muon_trigger"), combine="weight", systName="muon_trigger")
+        muonIDSF = getScaleFactor("lepton", (era, "muon_ID", "cut_medium"), systName="muon_ID")
+        muonIsoSF = getScaleFactor("lepton", (era, "muon_iso", "iso_tight_id_medium"), systName="muon_iso")
+        # single muon trigger
+        #muonTriggerSF = getScaleFactor("lepton", (era, "muon_trigger"), systName="muon_trigger")
 
         sorted_electrons = op.sort(t.Electron, lambda ele : -ele.pt)
         electrons = op.select(sorted_electrons, lambda ele : op.AND(ele.pt > 20., op.abs(ele.eta) < 2.5 , ele.cutBased>=3, op.abs(ele.sip3d) < 4., op.OR(op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.1), op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.2) ))) 
         
         eleIDSF = getScaleFactor("lepton", (era, "electron_ID", "cut_medium"), isElectron=True, systName="ele_ID")
         eleRecoSF = getScaleFactor("lepton", (era, "electron_reco"), isElectron=True, systName="ele_reco")
+        # single electron trigger 
         #eleTriggerSF = getScaleFactor("lepton", (era, "electron_trigger"), isElectron=True, systName="ele_trigger")
-
 
         sorted_jets=op.sort(t.Jet, lambda j : -j.pt)
         jetsSel = op.select(sorted_jets, lambda j : op.AND(j.pt > 30., op.abs(j.eta)< 2.5, j.jetId &2))   
@@ -248,7 +254,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         # exclude from the jetsSel any jet that happens to include within its reconstruction cone a muon or an electron.
         jets= op.select(jetsSel, lambda j : op.AND(op.NOT(op.rng_any(electrons, lambda ele : op.deltaR(j.p4, ele.p4) < 0.3 )), op.NOT(op.rng_any(muons, lambda mu : op.deltaR(j.p4, mu.p4) < 0.3 ))))
         
-        # order jets by *decreasing* deepFlavour
+        # order jets 
         cleanedJetsByDeepFlav = op.sort(jets, lambda j: -j.btagDeepFlavB)
         cleanedJetsByDeepB = op.sort(jets, lambda j: -j.btagDeepB)
         
@@ -312,10 +318,13 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 "elmu": op.combine((electrons, muons), pred=lambda ele,mu : op.AND(osdilep(ele,mu), ele.pt > mu.pt)),
                 "muel": op.combine((muons, electrons), pred=lambda mu,ele : op.AND(osdilep(mu,ele), mu.pt > ele.pt))
              }
+        
+        elemuTrigSF = getScaleFactor("dilepton", ("elemuLeg_HHMoriond17_2016"), systName="elmutrig")
+        mueleTrigSF = getScaleFactor("dilepton", ("mueleLeg_HHMoriond17_2016"), systName="mueltrig")
        
         osllSFs = {
-                "elmu" : (lambda lep :  [ muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), ]),#eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
-                "muel" : (lambda lep :  [ muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), ]),#eleTriggerSF(lep[1]), muonTriggerSF(lep[0]) ]),
+                "elmu" : (lambda lep :  [ muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), elemuTrigSF(lep)]), #, eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
+                "muel" : (lambda lep :  [ muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), mueleTrigSF(lep)])  #  eleTriggerSF(lep[1]), muonTriggerSF(lep[0]) ]),
             }
 
         osllcatrng = lambda catrng : op.rng_len(catrng) > 0
@@ -507,16 +516,27 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 raise RuntimeError("Something went wrong in returning {0} discriminator !".format(tagger))
 
 
-        def TwoTagCount(uname, histosName, key, bjets_, sel, ptBin):
+        def TwoTagCount(uname, histosName, key, bjets, sel, iPt, ptBin):
             plots=[]
-           
-            flavour1=(bjets_[0].hadronFlavour)
-            flavour2=(bjets_[1].hadronFlavour)
+            
+            # check if both jets are falling in the same bins befor filling the histos
+            #if(iPt > -1): # -1 is inclusive--> always keep -1
+            #    pt1 = bjets[0].pt
+            #    pt2 = bjets[1].pt
+
+            #    if(lowerPtBinEdges[iPt] > max(pt1,pt2)):
+            #        return
+            #    if(ptBin != len(lowerPtBinEdges)):
+            #        if(lowerPtBinEdges[iPt+1] < min(pt1,pt2)):
+            #            return
+
+            flavour1=(bjets[0].hadronFlavour)
+            flavour2=(bjets[1].hadronFlavour)
 
             TwoTagCrossFlavour= {
-                    # both are bhadron : at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
+                    # both are b-hadron (truth flav): but at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
                     #"2b"   : [flavour1 == 5, flavour2 == 5],
-                    # these catgories  : both jet are btagged --> but one at least is light or charm hadron falv
+                    # these catgories  : both jet are btagged --> but one at least is light or charm hadron flav
                     "1b_1c": [flavour1==5,  flavour2==4],
                     "1b_1l": [flavour1==5, (flavour2==21 or (flavour2>0 and flavour2<4))],
                     "1c_1l": [flavour1==4, (flavour2==21 or (flavour2>0 and flavour2<4))],
@@ -543,70 +563,9 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             plots.append(SummedPlot("{0}".format(histosName),
                                     [non2bjets_2btagged, n2bjets_mctruth],
                                     title="N b-tags (mc truth)",
-                                    plotopts=utils.getOpts(uname))
+                                    plotopts=utils.getOpts(uname)))
 
             return plots 
-
-
-        def TwoTag(histos_name, tagger, WP, bjets, sel, ptBin):
-            plots=[]
-            iWP= ( 0 if WP=="L" else ( 1 if WP=="M" else 2))    
-            # return before filling if not in this pt bin
-            if(ptBin>-1): # -1 is inclusive--> always keep -1
-                pt1 = bjets[0].pt
-                pt2 = bjets[1].pt
-
-                if(lowerPtBinEdges[ptBin]>max(pt1,pt2)):
-                    return
-                if(ptBin!=len(lowerPtBinEdges)):
-                    if(lowerPtBinEdges[ptBin+1]<min(pt1,pt2)):
-                        return
-
-            btag1 = ReturnVarAtIndex(tagger,WP,bjets, 0)
-            btag2 = ReturnVarAtIndex(tagger,WP,bjets, 1)
-            
-            nPassWPs={}
-            for iWP, key in enumerate(btaggingWPs.keys()):
-                nPassWPs[iWP]= (btag1>btaggingWPs[tagger][era][iWP])
-                nPassWPs[iWP]= (btag2>btaggingWPs[tagger][era][iWP])
-
-            flavour1=(jets[0].hadronFlavour)
-            flavour2=(jets[1].hadronFlavour)
-            
-            bin1=0
-            bin2=0
-            if(flavour1==21 or (flavour1>0 and flavour1<4)):
-                bin1=1
-            if(flavour1==4): 
-                bin1=2
-            if(flavour1==5):
-                bin1=3
-            if(flavour2==21 or (flavour2>0 and flavour2<4)):
-                bin2=1
-            if(flavour2==4):
-                bin2=2
-            if(flavour2==5):
-                bin2=3
-
-
-            binProduct=0
-            if(bin2==3 and bin1==3):
-                binProduct=3
-            elif(bin1==3 or bin2==3):
-                binProduct=2
-            elif(bin1==2 or bin2==2):
-                binProduct=1
-            else:
-                binProduct=0
-
-            #twoTagCrossFlavour={}
-            #for iWP, key in enumerate(btaggingWPs.keys()): 
-            #    twoTagCrossFlavour[iWP]=binProduct + 4*nPassWPs[iWP]
-            #    plots.append(Plot.make1D(histos_name,
-            #                 twoTagCrossFlavour[iWP], 
-            #                 sel, EqBin(14, -1, 13), 
-            #                 title="N b-tags Pass {tagger} (mc truth)".format(tagger=tagger)))
-            return plots
 
     # ---- Ask for plots  --- 
         for channel, (leptons, cat) in categories.items():
@@ -619,7 +578,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             plots.extend(makeJetPlots(TwoLeptonsTwoJets, jets, channel))
             
             #plots.extend(makeMETPlots(TwoLeptonsTwoJets, leptons, MET, corrMET, channel))
-            #plots.extend(MakeEXTRAMETPlots(TwoLeptonsTwoJets, corrMET, MET, channel))
+            plots.extend(MakeEXTRAMETPlots(TwoLeptonsTwoJets, corrMET, MET, channel))
             
             for WP in WorkingPoints:
                 bJets_PassdeepflavourWP=safeget(bjets, "DeepFlavour", WP)
@@ -642,6 +601,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                         bjets_=safeget(bjets, tagger, WP)
                         for iPT in range(-1,len(lowerPtBinEdges)):
                             histosName = channel+"_only2_twoTags_"+ key + "_"+ ReturnPtLabel(iPT)
-                            TwoTagCount(channel, histosName, key, bjets_, TwoLeptonsTwoBjets, ReturnPtLabel(iPT))
+                            TwoTagCount(channel, histosName, key, bjets_, TwoLeptonsTwoBjets, iPT, ReturnPtLabel(iPT))
 
-            return plots
+        return plots
