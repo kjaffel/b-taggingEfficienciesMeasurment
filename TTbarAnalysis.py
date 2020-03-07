@@ -118,7 +118,13 @@ class METcorrection(object):
             self.phi=op.multiSwitch((corrMETx> 0,atan),(corrMETy> 0,atan+math.pi),atan-math.pi)
 
 class TTbarDileptonMeasurment(NanoAODHistoModule):
+    """
 
+    This class is for b-tagging efficiencies measurments with a tag counting method in ttbar dilepton 
+    events at 13TeV 
+    samples are for 2018 data in NanoAODv5 format 
+
+    """
     def __init__(self, args):
         super(TTbarDileptonMeasurment, self).__init__(args)
         self.plotDefaults = {
@@ -129,6 +135,11 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                             "show-ratio"       : True,
                             "sort-by-yields"   : False,
                             }
+
+
+    def addArgs(self, parser):
+                super(controlPlotter, self).addArgs(parser)
+                        parser.add_argument("-s", "--systematic", action="store_true", help="Produce systematic variations")
 
     def prepareTree(self, tree, sample=None, sampleCfg=None):
         era = sampleCfg.get("era") if sampleCfg else None
@@ -204,7 +215,10 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         
         
         if self.isMC(sample):
-            noSel = noSel.refine("genWeight", weight=tree.genWeight, cut=op.OR(*chain.from_iterable(triggersPerPrimaryDataset.values())))
+            noSel = noSel.refine("genWeight", weight=tree.genWeight, cut=op.OR(*chain.from_iterable(triggersPerPrimaryDataset.values()), autoSyst=self.doSysts))
+            if self.doSysts:
+                logger.info("Adding QCD scale variations")
+                noSel = utils.addTheorySystematics(self, tree, noSel)
         else:
             noSel = noSel.refine("withTrig", cut=makeMultiPrimaryDatasetTriggerSelection(sample, triggersPerPrimaryDataset) )
             
@@ -262,13 +276,11 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 "DeepCSV":{ # era: (loose, medium, tight)
                             #"2016": (0.2217, 0.6321, 0.8953), 
                             #"2017":(0.1522, 0.4941, 0.8001), 
-                            "2018":(0.1241, 0.4184, 0.7527)
-                            },
+                            "2018":(0.1241, 0.4184, 0.7527) },
                 "DeepFlavour":{
                             #"2016":(0.0614, 0.3093, 0.7221), 
                             #"2017":(0.0521, 0.3033, 0.7489), 
-                            "2018": (0.0494, 0.2770, 0.7264)
-                            }
+                            "2018": (0.0494, 0.2770, 0.7264) }
                 }
         
         bjets = {}
@@ -298,7 +310,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                     
                 else:
                     print ("Btagging: Era= {0}, Tagger={1}, Pass_{2}_working_point={3}".format(era, tagger, suffix, btaggingWPs[tagger][era][idx] ))
-                    print (suffix, era)
                     print ("btag_{0}_94X".format(era).replace("94X", "102X" if era=="2018" else "94X"), "{0}_{1}".format('DeepJet', suffix))
                     
                     bJets_deepcsv[wp] = op.select(cleanedJetsByDeepB, lambda j : j.btagDeepB >= btaggingWPs[tagger][era][idx] )   
@@ -345,13 +356,13 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             for i in range(maxJet):
                 plots.append(Plot.make1D(f"{uname}_jet{i+1}_pt", jets[i].pt, sel,
                             EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), title=f"{utils.getCounter(i+1)} jet p_{{T}} (GeV)",
-                            plotopts=utils.getOpts(uname)))
+                            plotopts=utils.getOpts(uname, **{"log-y": True)))
                 plots.append(Plot.make1D(f"{uname}_jet{i+1}_eta", jets[i].eta, sel,
                             EqBin(50 // binScaling, -2.4, 2.4), title=f"{utils.getCounter(i+1)} jet eta",
-                            plotopts=utils.getOpts(uname, **{"log-y": False})))
+                            plotopts=utils.getOpts(uname, **{"log-y": True})))
                 plots.append(Plot.make1D(f"{uname}_jet{i+1}_phi", jets[i].phi, sel,
                             EqBin(50 // binScaling, -3.1416, 3.1416), title=f"{utils.getCounter(i+1)} jet phi", 
-                            plotopts=utils.getOpts(uname, **{"log-y": False})))
+                            plotopts=utils.getOpts(uname, **{"log-y": True})))
 
             return plots
         
@@ -368,21 +379,21 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                 safeget(sel, key), 
                                 EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), 
                                 title=f"{utils.getCounter(i+1)} bJet pT [GeV]", 
-                                plotopts=utils.getOpts(uname)))
+                                plotopts=utils.getOpts(uname, **{"log-y": True)))
                     
                     plots.append(Plot.make1D(f"{uname}_bJet{i+1}_eta_{key}".format(key=key), 
                                 bjets_[i].eta,
                                 safeget(sel, key), 
                                 EqBin(50 // binScaling, -2.4, 2.4), 
                                 title=f"{utils.getCounter(i+1)} bJet eta", 
-                                plotopts=utils.getOpts(uname)))
+                                plotopts=utils.getOpts(uname, **{"log-y": True)))
             
                     plots.append(Plot.make1D(f"{uname}_bJet{i+1}_phi_{key}".format(key=key), 
                                 bjets_[i].phi, 
                                 safeget(sel, key),
                                 EqBin(50 // binScaling, -3.1416, 3.1416), 
                                 title=f"{utils.getCounter(i+1)} bJet phi", 
-                                plotopts=utils.getOpts(uname)))
+                                plotopts=utils.getOpts(uname, **{"log-y": True)))
             return plots
 
         def makeDiscriminatorPlots(sel, bjets, wp, uname):
@@ -400,15 +411,18 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                         safeget(sel, "DeepFlavour{0}".format(wp)),
                                         EqBin(60, bin0, 1.), 
                                         title="DeepFlavourBDisc {0}".format(wp), 
-                                        plotopts=utils.getOpts(uname.lower())))
+                                        plotopts=utils.getOpts(uname, **{"log-y": True)))
                     else:
                         plots.append(Plot.make1D(f"{uname}_jet{i+1}_discr_deepCSV{wp}", 
                                         bjets_[i].btagDeepB,
                                         safeget(sel, "DeepCSV{0}".format(wp)),
                                         EqBin(60, bin0, 1.), 
                                         title= "DeepCSVBDisc {0}".format(wp), 
-                                        plotopts=utils.getOpts(uname.lower())))
-    
+                                        plotopts=utils.getOpts(uname, **{"log-y": True)))
+                # Let's do L, M, T discr in one plot
+                passLoose =
+                passMedium =
+                passTight =
             return plots
 
         def makeLeptonPlots(sel, leptons, uname):
@@ -421,31 +435,31 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             for i in range(2):
                 plots.append(Plot.make1D(f"{uname}_lep{i+1}_pt", leptons[i].pt, sel,
                                 EqBin(60 // binScaling, 30., 530.), title="%s p_{T} [GeV]" % flav,
-                                plotopts=utils.getOpts(uname)))
+                                plotopts=utils.getOpts(uname, **{"log-y": True})))
                 plots.append(Plot.make1D(f"{uname}_lep{i+1}_eta", leptons[i].eta, sel,
                                 EqBin(50 // binScaling, -2.4, 2.4), title="%s eta" % flav,
-                                plotopts=utils.getOpts(uname, **{"log-y": False})))
+                                plotopts=utils.getOpts(uname, **{"log-y": True})))
                 plots.append(Plot.make1D(f"{uname}_lep{i+1}_phi", leptons[i].phi, sel,
                                 EqBin(50 // binScaling, -3.1416, 3.1416), title="%s phi" % flav,
-                                plotopts=utils.getOpts(uname, **{"log-y": False})))
+                                plotopts=utils.getOpts(uname, **{"log-y": True})))
             return plots
         def makeJetmultiplictyPlots(sel, jets, uname):
             binScaling=1
             plots=[]
             plots.append(Plot.make1D(f"{uname}_Jet_mulmtiplicity", op.rng_len(jets), sel,
-                            EqBin(10, 2., 8.), title="Jet mulmtiplicity",
-                            plotopts=utils.getOpts(uname)))
+                            EqBin(10, 0., 10.), title="Jet mulmtiplicity",
+                            plotopts=utils.getOpts(uname, **{"log-y": True})))
             plots.append(Plot.make1D(f"{uname}_nVX", 
                             t.PV.npvs, sel, 
                             EqBin(50 // binScaling, 0., 60.), title="reconstructed vertices",
-                            plotopts=utils.getOpts(uname)))
+                            plotopts=utils.getOpts(uname, **{"log-y": True})))
             # FIXME
             #for i in range(2, 5):
             #    event=sel.refine("{i}JetSel".format(i), cut=[ op.rng_len(jets) ==i ])
             #    plots.append(Plot.make1D(f"{uname}_EventSelection", 
-            #                    event, event,
-            #                    EqBin(50 // binScaling, 0., i), title="Event selection",
-            #                    plotopts=utils.getOpts(uname)))
+            #                    event, sel,
+            #                    EqBin(10, 0., 5.), title="Event selection",
+            #                    plotopts=utils.getOpts(uname, **{"log-y": True})))
             return plots
         
         def makeMETPlots(sel, leptons, met, corrMET, uname):
@@ -454,19 +468,19 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
 
             plots.append(Plot.make1D(f"{uname}_MET_pt", met.pt, sel,
                         EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname)))
+                        plotopts=utils.getOpts(uname, **{"log-y": True})))
             plots.append(Plot.make1D(f"{uname}_MET_phi", met.phi, sel,
                         EqBin(60 // binScaling, -3.1416, 3.1416), title="MET #phi",
-                        plotopts=utils.getOpts(uname, **{"log-y": False})))
+                        plotopts=utils.getOpts(uname, **{"log-y": True})))
             for i in range(2):
                 plots.append(Plot.make1D(f"{uname}_MET_lep{i+1}_deltaPhi",
                             op.Phi_mpi_pi(leptons[i].phi - met.phi), sel, EqBin(60 // binScaling, -3.1416, 3.1416),
-                            title="#Delta #phi (lepton, MET)", plotopts=utils.getOpts(uname, **{"log-y": False})))
+                            title="#Delta #phi (lepton, MET)", plotopts=utils.getOpts(uname, **{"log-y": True})))
                 
                 MT = op.sqrt( 2. * met.pt * leptons[i].p4.Pt() * (1. - op.cos(op.Phi_mpi_pi(met.phi - leptons[i].p4.Phi()))) )
                 plots.append(Plot.make1D(f"{uname}_MET_MT_lep{i+1}", MT, sel,
                             EqBin(60 // binScaling, 0., 600.), title="Lepton M_{T} [GeV]",
-                            plotopts=utils.getOpts(uname)))
+                            plotopts=utils.getOpts(uname, **{"log-y": True})))
 
             return plots
 
@@ -476,16 +490,14 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             binScaling=1
 
             plots.append(Plot.make1D(f"{uname}_met_pT",
-                        met.pt, 
-                        sel, 
+                        met.pt, sel, 
                         EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname)))
+                        plotopts=utils.getOpts(uname, **{"log-y": True})))
                         
             plots.append(Plot.make1D(f"{uname}_xycorrmet_pT",
-                        corrmet.pt, 
-                        sel,
+                        corrmet.pt, sel,
                         EqBin(60 // binScaling, 0., 600.), title="corrMET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname)))
+                        plotopts=utils.getOpts(uname, **{"log-y": True})))
 
             return plots
 
@@ -531,18 +543,16 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             #            return
             nTrueB = (op.rng_count(jets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
             plots.append(Plot.make1D("{0}_Events_2l2j_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
-                                        nTrueB, 
-                                        _2l2jsel,                                        
+                                        nTrueB, _2l2jsel,                                        
                                         EqBin(2, 0., 2.),
                                         title="N b-tags (mc truth)",
-                                        plotopts=utils.getOpts(uname)))
+                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
 
             plots.append(Plot.make1D("{0}_Events_2l2j_2btagged_truthFlav_1atleast_light_or_charm_{1}_{2}".format(uname, key, ptBin),
-                                        nTrueB < 2,
-                                        _2l2bjsel.get(key),
+                                        nTrueB < 2,_2l2bjsel.get(key),
                                         EqBin(2, 0., 2.),
                                         title="N b-tags (mc truth)",
-                                        plotopts=utils.getOpts(uname)))
+                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
             
             ########## 
             if isMC:
