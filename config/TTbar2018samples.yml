@@ -176,7 +176,7 @@ plotIt:
     height: 600
     luminosity-label: '%1$.2f fb^{-1} (13 TeV)'
     experiment: CMS
-    extra-label: Bamboo test
+    extra-label: 2018Data --Work in progress
     show-overflow: true
   legend:
     position: [0.7, 0.6, 0.91, 0.91]
@@ -227,6 +227,10 @@ plotIt:
       # on the jets
       - jer
       - jesTotal
+      # sys from theory  
+      - qcdScale
+      - psISR
+      - psFSR
       # on the lepton id /iso 
       - muid
       - muiso
