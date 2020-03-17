@@ -143,7 +143,7 @@ def ReturnVarAtIndex(tagger, wp, bjets, idx):
         raise RuntimeError("Something went wrong in returning {0} discriminator !".format(tagger))
 
 #def TwoTagCount(uname, histosName, key, jets, bjets, _2l2jsel, _2l2bjsel, iPT, ptBin):
-def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel, isMC):
+def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel):#, isMC):
     from bamboo.plots import Plot, SummedPlot
     from bamboo.plots import EquidistantBinning as EqBin
     from bamboo import treefunctions as op
@@ -151,50 +151,108 @@ def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel, isMC):
     for iPT in range(-1,len(lowerPtBinEdges)):
         ptBin= ReturnPtLabel(iPT)
         histosName = uname+"_only2_twoTags_"+ key + "_"+ ptBin
-        if(iPT > -1): # -1 is inclusive--> always keep -1
-            pt1 = bjets[0].pt
-            pt2 = bjets[1].pt
-            if(lowerPtBinEdges[iPT] > max(pt1,pt2)):
-                return
-            if(iPT != len(lowerPtBinEdges)):
-                if(lowerPtBinEdges[iPT+1] < min(pt1,pt2)):
-                    return
-                #if pt1 not in range(lowerPtBinEdges[iPT], lowerPtBinEdges[iPT+1]) or pt2 not in range(lowerPtBinEdges[iPT], lowerPtBinEdges[iPT+1]):
-                #    return
-        print ("start filling histos in ", ReturnPtLabel(iPT))
+        if ptBin=="Inclusive": 
+            _2l2jsel_ptBin  = _2l2jsel
+            _2l2bjsel_ptBin = _2l2bjsel
+        else:
+            if ptBin =="600toInf":
+                minpt = 600.
+                maxpt = 1000.
+            else:
+                minpt = lowerPtBinEdges[iPT]
+                maxpt = lowerPtBinEdges[iPT+1]
+                print ("******************************", minpt, maxpt, ptBin)
+            # FIXME 
+            _2l2bjsel_ptBin = dict((key, SelNoPtBinApplied.refine("{0}_2bJets_{1}_{2}ptBin".format(uname, key, ptBin), cut=(op.in_range(minpt, bjets[0].pt, maxpt), op.in_range(minpt, bjets[1].pt, maxpt)) )) for key, SelNoPtBinApplied in _2l2bjsel.items())
+            _2l2jsel_ptBin  = _2l2jsel.refine("{0}_2Jets_Fall_inptBin_{1}_{2}".format(uname, key, ptBin), cut=(op.in_range(minpt, jets[0].pt, maxpt), op.in_range(minpt, jets[1].pt, maxpt)))
+        print("start filling histos in ", ptBin)
+        
+        isLight  = lambda abshf : op.OR(abshf == 21, op.in_range(1, abshf, 3))
+        isCharm  = lambda abshf : abshf == 4
+        isBeauty = lambda abshf : abshf == 5
+        TwoTagCrossFlavour = {
+                    #"2b"    : lambda f1, f2 : op.AND(isBeauty(f1), isBeauty(f2)),
+                    "1b_1c" : lambda f1, f2 : op.OR(op.AND(isBeauty(f1), isCharm(f2)), op.AND(isBeauty(f2), isCharm(f1))),
+                    "1b_1l" : lambda f1, f2 : op.OR(op.AND(isBeauty(f1), isLight(f2)), op.AND(isBeauty(f2), isLight(f1))),
+                    "1c_1l" : lambda f1, f2 : op.OR(op.AND(isCharm(f1), isLight(f2)), op.AND(isCharm(f2), isLight(f1))),
+                    "2c"    : lambda f1, f2 : op.AND(isCharm(f1), isCharm(f2)),
+                    "2l"    : lambda f1, f2 : op.AND(isLight(f1), isLight(f2)),
+                    }
+        twoTagCrossFlavour_categories = dict((catName, (_2l2bjsel_ptBin.get(key)).refine("{0}_TwoTagCross_{1}_{2}_{3}".format(uname, catName, key, ptBin), cut=catSel(op.abs(bjets[0].hadronFlavour), op.abs(bjets[1].hadronFlavour)))) for catName, catSel in TwoTagCrossFlavour.items())
+        # then fill a histogram for each (you can use `enumerate` to fill a different bin for each selection, and then make a `SummedPlot`)
+        #for BinIDX, (catName, catSel) in enumerate(twoTagCrossFlavour_categories.items()):
+        
+        Twobtagged_Truth_BeautyCharm = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_BeautyCharm_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(0), twoTagCrossFlavour_categories.get("1b_1c"),
+                                                    EqBin(2, 0., 6.),
+                                                    title="N Fake b-tags (mc truth)",
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
 
-        nTrueB = (op.rng_count(jets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
-        plots.append(Plot.make1D("{0}_Events_2l2j_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
-                                        nTrueB, _2l2jsel,                                        
-                                        EqBin(2, 0., 2.),
-                                        title="N b-tags (mc truth)",
-                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+        Twobtagged_Truth_BeautyLight = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_BeautyLight_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(1), twoTagCrossFlavour_categories.get("1b_1l"),
+                                                    EqBin(2, 0., 6.),
+                                                    title="N Fake b-tags (mc truth)",
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
+
+        Twobtagged_Truth_CharmLight = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_CharmLight_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(2), twoTagCrossFlavour_categories.get("1c_1l"),
+                                                    EqBin(2, 0., 6.),
+                                                    title="N Fake b-tags (mc truth)",
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
+    
+        Twobtagged_Truth_2Charm = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_2Charm_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(3), twoTagCrossFlavour_categories.get("2c"),
+                                                    EqBin(2, 0., 6.),
+                                                    title="N Fake b-tags (mc truth)",
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
         
-        plots.append(Plot.make1D("{0}_Events_2l2j_2btagged_truthFlav_1atleast_light_or_charm_{1}_{2}".format(uname, key, ptBin),
-                                        nTrueB < 2,_2l2bjsel.get(key),
-                                        EqBin(2, 0., 2.),
-                                        title="N b-tags (mc truth)",
-                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-                
-            ########## 
-           #     if isMC:
-           #         flavour1=(bjets[0].hadronFlavour)
-           #         flavour2=(bjets[1].hadronFlavour)
+        Twobtagged_Truth_2Light = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_2Light_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(4), twoTagCrossFlavour_categories.get("2l"),
+                                                    EqBin(2, 0., 6.),
+                                                    title="N Fake b-tags (mc truth)",
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
         
-           #         TwoTagCrossFlavour= {
-           #             # both are b-hadron (truth flav): but at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
-           #             "2b"   : [flavour1 == 5, flavour2 == 5],
-           #             # these catgories  : both jet are btagged --> but one at least is light or charm hadron flav
-           #             "1b_1c": [flavour1==5,  flavour2==4],
-           #             "1b_1l": [flavour1==5, (flavour2==21 or (flavour2>0 and flavour2<4))],
-           #             "1c_1l": [flavour1==4, (flavour2==21 or (flavour2>0 and flavour2<4))],
-           #             "2c"   : [flavour1==4,  flavour2==4],
-           #             "2l"   : [(flavour1==21 or (flavour1>0 and flavour1<4)), (flavour2==21 or (flavour2>0 and flavour2<4))]
-           #             }
-           # 
-           #     nTrueB = (op.rng_count(jets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
+            
+        plots.append(SummedPlot("{0}_Events_Fake2btaggedJets_{1}_{2}".format(uname, key, ptBin),
+                    [Twobtagged_Truth_BeautyCharm, Twobtagged_Truth_BeautyLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_2Light],
+                    title="N Fake b-tags (mc truth)",
+                    plotopts=utils.getOpts(uname, **{"log-y": True})))
+            
+            
+    return plots 
+           # if isMC:
+           #     flavour1=(bjets[0].hadronFlavour)
+           #     flavour2=(bjets[1].hadronFlavour)
+    
+           #     TwoTagCrossFlavour= {
+           #     # both are b-hadron (truth flav): but at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
+           #     #       "2b"   : [flavour1 == 5, flavour2 == 5],
+           #     # these catgories  : both jet are btagged --> but one at least is light or charm hadron flav
+           #         "1b_1c": [flavour1==5,  flavour2==4],
+           #         "1b_1l": [flavour1==5, (flavour2==21 or (flavour2>0 and flavour2<4))],
+           #         "1c_1l": [flavour1==4, (flavour2==21 or (flavour2>0 and flavour2<4))],
+           #         "2c"   : [flavour1==4,  flavour2==4],
+           #         "2l"   : [(flavour1==21 or (flavour1>0 and flavour1<4)), (flavour2==21 or (flavour2>0 and flavour2<4))]
+           #     }
+           # # FIXME : I am counting the number of bjets that pass the hadron flavour 5 but not the number of events          
+            #nTrueB = (op.rng_count(bjets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
+        
+            #plots.append(Plot.make1D("{0}_Events_2l2j_2btagged_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
+            #                            nTrueB, _2l2bjsel_ptBin.get(key),                                        
+            #                            EqBin(2, 0., 2.),
+            #                            title="N b-tags (mc truth)",
+            #                            plotopts=utils.getOpts(uname, **{"log-y": True})))
+            # FIXME 
+            #nFakebJet_2btagged = (op.rng_count(bjets, lambda j : [j[0].hadronFlavour,j[1].hadronFlavour] == op.OR(*chain.from_iterable(TwoTagCrossFlavour.values()))) if isMC else op.c_int(-1))
+                    
+           #      nTrueB = (op.rng_count(jets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
+           #plots.append(Plot.make1D("{0}_Events_2l2j_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
+           #                                nTrueB, _2l2jsel_ptBin,                                        
+           #                                EqBin(2, 0., 2.),
+           #                                title="N b-tags (mc truth)",
+           #                                plotopts=utils.getOpts(uname, **{"log-y": True})))
            #     tagger=key.replace(WP, "")
-           #     if tagger == "DeepFlavour":
+           #      if tagger == "DeepFlavour":
            #         bjetsfortagger= bJets_PassdeepflavourWP
            #     else:
            #         bjetsfortagger= bJets_PassdeepcsvWP
@@ -219,7 +277,6 @@ def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel, isMC):
            #     #                            EqBin(2, 0., 2.),
            #     #                            title="N b-tags (mc truth)",
            #     #                            plotopts=utils.getOpts(uname)))
-    return plots 
 
 class TTbarDileptonMeasurment(NanoAODHistoModule):
     """
@@ -666,6 +723,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                     #for iPT in range(-1,len(lowerPtBinEdges)):
                     #    histosName = channel+"_only2_twoTags_"+ key + "_"+ ReturnPtLabel(iPT)
                     #    plots +=TwoTagCount(channel, histosName, key, jets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBjets, iPT, ReturnPtLabel(iPT))
-                    plots +=(TwoTagCount(channel, key, jets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBjets, isMC))
+                    plots +=(TwoTagCount(channel, key, jets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBjets))#, isMC))
 
         return plots
