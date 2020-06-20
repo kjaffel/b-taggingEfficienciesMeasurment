@@ -5,7 +5,7 @@ eras:
     luminosity: 41529.152060112 #pb
     luminosity-error: 0.023     
 samples:
-  DYJetsToLL_M-10to50-madgraphMLM: #out of my range 70. <mll_cut < 120. GeV ** keep it in case raise again !
+  DYJetsToLL_M-10to50-madgraphMLM: 
     db: das:/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
     files: dascache/bTaggingEff/DYJetsToLL_M-10to50-madgraphMLM_2017.dat
     generated-events: 'genEventSumw'
@@ -15,13 +15,32 @@ samples:
     pufile: 'DYJetsToLL_M-10to50_2017.json'
     split: 4
 
-        ######## ttbar show problem with FSR and ISR variations  
+  DYJetsToLL_M-50-madgraphMLM:
+    db: das:/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/DYJetsToLL_M-50-madgraphMLM_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 6225.42  #+- ? pb
+    group: DY
+    era: '2017'
+    split: 4
+
+
+  DYJetsToLL_M-50-amcatnloFXFX:
+    db: das:/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/DYJetsToLL_M-50-amcatnloFXFX_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 6529.0  # +- 28.29 pb 
+    group: DY
+    era: '2017'
+    split: 4
+    
+    ######## ttbar show problem with FSR and ISR variations  
   TTToHadronic: 
     db: das:/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
     files: dascache/bTaggingEff/TTHadronic_2017.dat
     generated-events: 'genEventSumw'
     cross-section: 377.96  # pb  # uncer= +4.8%-6.1%    
-    group: ttbar_FullHadronic
+    group: TTJets_AH
     era: '2017'
     split: 4
    
@@ -30,7 +49,7 @@ samples:
     files: dascache/bTaggingEff/TTTo2L2Nu_2017.dat
     generated-events: 'genEventSumw' 
     cross-section: 88.29 # pb   # uncer= +4.8%-6.1%   
-    group: ttbar_FullLeptonic
+    group: TTJets_DL
     era: '2017'
     split: 4
 
@@ -39,7 +58,7 @@ samples:
     files: dascache/bTaggingEff/TTToSemiLeptonic_2017.dat
     generated-events: 'genEventSumw' 
     cross-section:  365.34 # +- +4.8%-6.1%  pb
-    group: ttbar_SemiLeptonic
+    group: TTJets_SL
     era: '2017'
     split: 4
 ############   single top
@@ -48,7 +67,7 @@ samples:
     files: dascache/bTaggingEff/ST_tWtop_5f_2017.dat
     generated-events: 'genEventSumw'
     cross-section:  34.91    # uncer= 0.02817 pb
-    group: ST
+    group: tW
     era: '2017'
     split: 4
 
@@ -57,7 +76,7 @@ samples:
     files: dascache/bTaggingEff/ST_tWantitop_5f_2017.dat
     generated-events: 'genEventSumw'
     cross-section: 34.97      # uncer = 0.02827 pb
-    group: ST
+    group: atW
     era: '2017'
     pufile: 'ST_tW_antitop_5f_2017.json'
     split: 4
@@ -67,7 +86,7 @@ samples:
     files: dascache/bTaggingEff/ST_tchannelantitop_4f_2017.dat
     generated-events: 'genEventSumw' 
     cross-section: 67.91     # uncer= 0.3487 pb
-    group: ST
+    group: atW
     era: '2017'
     split: 4
 
@@ -76,7 +95,7 @@ samples:
     files: dascache/bTaggingEff/ST_tchanneltop_4f_2017.dat
     generated-events: 'genEventSumw'
     cross-section: 113.3    # uncer=  0.6404  pb    
-    group: ST
+    group: tW
     era: '2017'
     split: 4
 
@@ -85,10 +104,65 @@ samples:
     files: dascache/bTaggingEff/ST_schannel_4f_2017.dat
     generated-events: 'genEventSumw'
     cross-section: 3.74 # uncer= 0.003533 pb
-    group: ST
+    group: tW
     era: '2017'
     split: 4
         
+
+  WW:
+    db: das:/WW_TuneCP5_13TeV-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/WW_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 75.8 # +- 0.1123  pb
+    group: WW
+    era: '2017'
+    split: 4
+
+  WZ:
+    db: das:/WZ_TuneCP5_13TeV-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/WZ_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 27.6 # +- 0.04 pb
+    group: WZ
+    era: '2017'
+    split: 4
+
+  ZZ:
+    db: das:/ZZ_TuneCP5_13TeV-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ZZ_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 12.14 # +- 0.01964 pb
+    group: ZZ
+    era: '2017'
+    split: 4
+
+  W2JetsToLNu: # TODO PHEDEX request : /W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_newPU_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    db: das:/W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/W2JetsToLNu_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 2793.0 # +-8.074 pb 
+    group: WPlusJets
+    era: '2017'
+    split: 4
+
+  W3JetsToLNu: 
+    db: das:/W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_PU2017_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/W3JetsToLNu_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 992.5 # +- 3.012 pb
+    group: WPlusJets
+    era: '2017'
+    split: 4
+
+  W4JetsToLNu: 
+    db: das:/W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/W4JetsToLNu_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 544.3 # +- 1.656
+    group: WPlusJets
+    era: '2017'
+    split: 4
+
   MuonEG_2017B:
     db: das:/MuonEG/Run2017B-Nano1June2019-v1/NANOAOD
     files: dascache/MuonEG_2017B.dat
@@ -257,43 +331,48 @@ plotIt:
   groups:
     data:
       legend: data
-    DY_NLO:
-      fill-color: "#0000FF" 
-      legend: Drell-Yan #(MADGRAPGH_aMC@NLO + PYTHIA8)
+    
+    TTJets_DL:
+      fill-color: "#9e7986"
+      legend: TTJets_DL
+      order: 10
+    tW:
+      fill-color: "#2f3c51"
+      legend: tW
+      order: 9
+    atW:
+      fill-color: "#62434f"
+      legend: atW
       order: 8
-    DY_LO:
-      fill-color: "#76ffff" 
-      legend: Drell-Yan #(MADGRAPGH + PYTHIA8)
-      order: 8
-    ttbar_FullLeptonic:
-      legend: tt Full Leptonic
-      fill-color: "#00624d" 
+    DY:
+      fill-color: "#7f0000"
+      legend: DY
       order: 7
-    ttbar_FullHadronic:
-      legend: tt Full Hadronic
-      fill-color: "#00ffc7" 
+    TTJets_AH:
+      fill-color: "#D4D2D5"
+      legend: TTJets_AH
       order: 6
-    ttbar_SemiLeptonic:
-      legend: tt Semi Leptonic
-      fill-color: "#8e0a19"
+    WPlusJets:
+      fill-color: "#64558A"
+      legend: WPlusJets
       order: 5
-    ST:
-      fill-color: "#ffc800"    
-      legend: Single Top
+    TTJets_SL:
+      fill-color: "#5e2036"
+      legend: TTJets_SL
       order: 4
-    ZZ: 
-      fill-color: "#ff4800"
-      legend: ZZ
+    WW:
+      fill-color: "#9ADCFE"
+      legend: WW
       order: 3
-    SM:
-      fill-color: "#ff0038"
-      legend: tth, Zh
+    ZZ:
+      fill-color: "#7C818C"
+      legend: ZZ
       order: 2
-    others: 
-      fill-color: "#ff8d58"
-      legend: others (tt+V, W+Jets , VVV, VV)
-      order: 1    
-
+    WZ:
+      fill-color: "#E8A53A"
+      legend: WZ
+      order: 1
+    
   plotdefaults:
       y-axis: Events
       log-y: both
@@ -337,14 +416,20 @@ plotIt:
     - L1PreFiring 
     # on the cross section
     # --- ttbar 
-    - TTHadronicxsc: {type: const, value: 1.0007530199388735263 , on: 'TTHadronic'} # uncer= 0.5174 pb    ---> ok 
-    #- TTTo2L2Nuxsc: {type: const, value: , on: 'TTTo2L2Nu'} # uncer= +4.8%-6.1%
+    - TTToHadronicxsc: {type: const, value: 1.0007530199388735263 , on: 'TTToHadronic'} # uncer= 0.5174 pb    ---> ok 
+    #- TTToFullLeptonicxsc: {type: const, value: , on: 'TTTo2L2Nu'} # uncer= +4.8%-6.1%
     #- TTToSemiLeptonicxsc: {type: const, value: , on: 'TTToSemiLeptonicxsc'} # uncer= +4.8%-6.1% 
-    # ---- DY 
-    - DYJetsToLLxsc: {type: const, value: 1.00036457938013915244, on: 'DYJetsToLL_M-10to50'}  #uncer= 5.764 pb
-    # ----- ST 
+    - DYJetsToLL_M-10to50-madgraphMLMxsc: {type: const, value: 1.00036457938013915244, on: 'DYJetsToLL_M-10to50-madgraphMLM'}  #uncer= 5.764 pb
+    - DYJetsToLL_M-50-amcatnloFXFXxsc: {type: const, value: 1.00433297595 , on: ' DYJetsToLL_M-50-amcatnloFXFX '}
     - ST_s-channel_4fxsc: {type: const, value: 1.0009446524064172, on: 'ST_s-channel_4f'}   # uncer= 0.003533 pb
     - ST_tW_top_5fxsc: {type: const, value: 1.000806932111143 , on: 'ST_tW_top_5f'}   # uncer= 0.02817 pb
     - ST_tW_antitop_5fxsc: {type: const, value: 1.0008084072061767, on: 'ST_tW_antitop_5f'}  # uncer = 0.02827 pb
     - ST_t-channel_antitop_4fxsc: {type: const, value: 1.005134737152113, on: 'ST_tchannel_antitop_4f'} # uncer= 0.3487 pb
     - ST_t-channel_top_4fxsc: {type: const, value: 1.0056522506619594, on: 'ST_tchannel_top_4f'} # uncer=  0.6404  pb
+    - W2JetsToLNuxsc: {type: const, value: 1.00289079842 , on: ' W2JetsToLNu '}
+    - W3JetsToLNuxsc: {type: const, value: 1.00303476071 , on: ' W3JetsToLNu '}
+    - W4JetsToLNuxsc: {type: const, value: 1.00304243983 , on: ' W4JetsToLNu '}
+    - WWxsc: {type: const, value: 1.00148153034 , on: ' WW '}
+    - WZxsc: {type: const, value: 1.00144927536 , on: ' WZ '}
+    - ZZxsc: {type: const, value: 1.00161779242 , on: ' ZZ '}
+
