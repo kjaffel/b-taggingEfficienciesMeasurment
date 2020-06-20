@@ -122,7 +122,7 @@ def makePrimaryANDSecondaryVerticesPlots(sel, uname):
     sv_pt=op.map(t.SV, lambda sv: sv.pt)
 
     plots.append(Plot.make1D(f"{uname}_number_primary_reconstructed_vertices", 
-                    t.PV.npvs, sel, 
+                    t.PV.npvsGood, sel, 
                     EqBin(50 // binScaling, 0., 60.), title="reconstructed vertices",
                     plotopts=utils.getOpts(uname, **{"log-y": True})))
     plots.append(Plot.make1D(f"{uname}_secondary_vertices_mass", 
@@ -210,8 +210,9 @@ def makehistosforTTbarEstimation(selections, ll, bjets, wp, met, suffix, uname):
     plots=[]
     for key, sel in selections.items():
         tagger = key.replace(wp, "")
+        bjets_ = safeget(bjets, tagger, wp)
         bb = bjets[key.replace(wp, "")][wp]
-        plots += [ Plot.make1D("{nm}_{uname}_{suffix}_lljj_{tagger}_btag{wp}_mll_and_{met}",
+        plots += [ Plot.make1D(f"{nm}_{uname}_{suffix}_lljj_{tagger}_btag{wp}_mll_and_{met}",
             llbbVar, sel, binning, title=title, plotopts=utils.getOpts(uname))
             for nm, (llbbVar, binning, title) in {
                 "jj_M"   : (op.invariant_mass(bb[0].p4+bb[1].p4), EqBin(40, 10., 1000.), "Mjj [GeV]"),
@@ -222,7 +223,7 @@ def makehistosforTTbarEstimation(selections, ll, bjets, wp, met, suffix, uname):
                 "jet1_pt": (bb[0].pt, EqBin( 50, 20., 500.), "jet1 p_{T} [GeV]"),
                 "jet2_pt": (bb[1].pt, EqBin( 50, 20., 300.), "jet2 p_{T} [GeV]"),
                 "lep1_pt": (ll[0].pt, EqBin( 50, 20., 400.), "Leading Lepton p_{T} [GeV]"),
-                "lep2_pt": (ll[1].pt, EqBin(50, 10., 200.), "Sub-leading Lepton p_{T} [GeV]"),
+                "lep2_pt": (ll[1].pt, EqBin( 50, 10., 200.), "Sub-leading Lepton p_{T} [GeV]"),
                 }.items()
             ]
     return plots 
