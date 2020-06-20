@@ -1,0 +1,350 @@
+tree: Events
+eras:
+  '2017':
+    #https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM
+    luminosity: 41529.152060112 #pb
+    luminosity-error: 0.023     
+samples:
+  DYJetsToLL_M-10to50-madgraphMLM: #out of my range 70. <mll_cut < 120. GeV ** keep it in case raise again !
+    db: das:/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/DYJetsToLL_M-10to50-madgraphMLM_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 15810   #pb    # total uncertainty= 5.764  pb 
+    group: DY
+    era: '2017'
+    pufile: 'DYJetsToLL_M-10to50_2017.json'
+    split: 4
+
+        ######## ttbar show problem with FSR and ISR variations  
+  TTToHadronic: 
+    db: das:/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/TTHadronic_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 377.96  # pb  # uncer= +4.8%-6.1%    
+    group: ttbar_FullHadronic
+    era: '2017'
+    split: 4
+   
+  TTToFullLeptonic:
+    db: das:/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/TTTo2L2Nu_2017.dat
+    generated-events: 'genEventSumw' 
+    cross-section: 88.29 # pb   # uncer= +4.8%-6.1%   
+    group: ttbar_FullLeptonic
+    era: '2017'
+    split: 4
+
+  TTToSemiLeptonic:   # TODO CHECK if it's better to use PSweights : /TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8 !
+    db: das:/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/TTToSemiLeptonic_2017.dat
+    generated-events: 'genEventSumw' 
+    cross-section:  365.34 # +- +4.8%-6.1%  pb
+    group: ttbar_SemiLeptonic
+    era: '2017'
+    split: 4
+############   single top
+  ST_tW_top_5f:
+    db: das:/ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ST_tWtop_5f_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section:  34.91    # uncer= 0.02817 pb
+    group: ST
+    era: '2017'
+    split: 4
+
+  ST_tW_antitop_5f:
+    db: das:/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7_ext1-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ST_tWantitop_5f_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 34.97      # uncer = 0.02827 pb
+    group: ST
+    era: '2017'
+    pufile: 'ST_tW_antitop_5f_2017.json'
+    split: 4
+    
+  ST_tchannel_antitop_4f:
+    db: das:/ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ST_tchannelantitop_4f_2017.dat
+    generated-events: 'genEventSumw' 
+    cross-section: 67.91     # uncer= 0.3487 pb
+    group: ST
+    era: '2017'
+    split: 4
+
+  ST_tchannel_top_4f:
+    db: das:/ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_new_pmx_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ST_tchanneltop_4f_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 113.3    # uncer=  0.6404  pb    
+    group: ST
+    era: '2017'
+    split: 4
+
+  ST_schannel_4f:
+    db: das:/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_102X_mc2017_realistic_v7-v1/NANOAODSIM
+    files: dascache/bTaggingEff/ST_schannel_4f_2017.dat
+    generated-events: 'genEventSumw'
+    cross-section: 3.74 # uncer= 0.003533 pb
+    group: ST
+    era: '2017'
+    split: 4
+        
+  MuonEG_2017B:
+    db: das:/MuonEG/Run2017B-Nano1June2019-v1/NANOAOD
+    files: dascache/MuonEG_2017B.dat
+    group: data
+    era: '2017'
+    run_range: [297046, 299329] 
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+
+  MuonEG_2017C:
+    db: das:/MuonEG/Run2017C-Nano1June2019-v1/NANOAOD
+    files: dascache/MuonEG_2017C.dat
+    group: data
+    era: '2017'
+    run_range: [299368, 302029]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+
+  MuonEG_2017D:
+    db: das:/MuonEG/Run2017D-Nano1June2019-v1/NANOAOD
+    files: dascache/MuonEG_2017D.dat
+    group: data
+    era: '2017'
+    run_range: [302030, 303434]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+
+  MuonEG_2017E:
+    db: das:/MuonEG/Run2017E-Nano1June2019-v1/NANOAOD
+    files: dascache/MuonEG_2017E.dat
+    group: data
+    era: '2017'
+    run_range: [303824, 304826]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+
+  MuonEG_2017F:
+    db: das:/MuonEG/Run2017F-Nano1June2019-v1/NANOAOD
+    files: dascache/MuonEG_2017F.dat
+    group: data
+    era: '2017'
+    run_range:  [305040, 306462]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+
+# single leptons primary dataset
+
+  SingleMuon_2017B:
+    group: data
+    era: "2017"
+    db: das:/SingleMuon/Run2017B-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleMuon_2017B.dat
+    run_range: [297046, 299329]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 2
+  
+  SingleMuon_2017C1:
+    group: data
+    era: "2017"
+    db: "das:/SingleMuon/Run2017C-Nano1June2019-v1/NANOAOD run between [299368, 302025]"
+    files: dascache/SingleMuon_2017C1.dat
+    run_range: [299368, 302025]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 4
+  
+  SingleMuon_2017C2:
+    group: data
+    era: "2017"
+    db: "das:/SingleMuon/Run2017C-Nano1June2019-v1/NANOAOD run between [302026, 302029]"
+    files: dascache/SingleMuon_2017C2.dat
+    run_range: [302026, 302029]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+  
+  SingleMuon_2017D:
+    group: data
+    era: "2017"
+    db: das:/SingleMuon/Run2017D-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleMuon_2017D.dat
+    run_range: [302030, 303434]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 2
+  
+  SingleMuon_2017E:
+    group: data
+    era: "2017"
+    db: das:/SingleMuon/Run2017E-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleMuon_2017E.dat
+    run_range: [303824, 304826]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 5
+  
+  SingleMuon_2017F:
+    group: data
+    era: "2017"
+    db: das:/SingleMuon/Run2017F-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleMuon_2017F.dat
+    run_range: [305040, 306462]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 8
+
+  SingleElectron_2017B:
+    group: data
+    era: "2017"
+    db: das:/SingleElectron/Run2017B-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleElectron_2017B.dat
+    run_range: [297046, 299329]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+  
+  SingleElectron_2017C1:
+    group: data
+    era: "2017"
+    db: "das:/SingleElectron/Run2017C-Nano1June2019-v1/NANOAOD run between [299368, 302025]"
+    files: dascache/SingleElectron_2017C1.dat
+    run_range: [299368, 302025]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 2
+  
+  SingleElectron_2017C2:
+    group: data
+    era: "2017"
+    db: "das:/SingleElectron/Run2017C-Nano1June2019-v1/NANOAOD run between [302026, 302029]"
+    files: dascache/SingleElectron_2017C2.dat
+    run_range: [302026, 302029]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+  
+  SingleElectron_2017D:
+    group: data
+    era: "2017"
+    db: das:/SingleElectron/Run2017D-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleElectron_2017D.dat
+    run_range: [302030, 303434]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 2
+  
+  SingleElectron_2017E:
+    group: data
+    era: "2017"
+    db: das:/SingleElectron/Run2017E-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleElectron_2017E.dat
+    run_range: [303824, 304826]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 3
+  
+  SingleElectron_2017F:
+    group: data
+    era: "2017"
+    db: das:/SingleElectron/Run2017F-Nano1June2019-v1/NANOAOD
+    files: dascache/SingleElectron_2017F.dat
+    run_range: [305040, 306462]
+    certified_lumi_file: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt
+    split: 3
+
+plotIt:
+  configuration:
+    width: 800
+    height: 600
+    luminosity-label: '%1$.2f fb^{-1} (13 TeV)'
+    experiment: CMS
+    extra-label: 2017Data --Work in progress
+    show-overflow: true
+    #error-fill-style: 3154
+    #error-fill-color: "#ee556270"
+    #ratio-fit-error-fill-style: 1001
+    #ratio-fit-error-fill-color: "#aa556270"
+    #ratio-fit-line-color: "#0B486B"
+    y-axis-format: "%1% / %2$.2f"
+
+  legend:
+    position: [0.7, 0.6, 0.91, 0.91]
+
+  groups:
+    data:
+      legend: data
+    DY_NLO:
+      fill-color: "#0000FF" 
+      legend: Drell-Yan #(MADGRAPGH_aMC@NLO + PYTHIA8)
+      order: 8
+    DY_LO:
+      fill-color: "#76ffff" 
+      legend: Drell-Yan #(MADGRAPGH + PYTHIA8)
+      order: 8
+    ttbar_FullLeptonic:
+      legend: tt Full Leptonic
+      fill-color: "#00624d" 
+      order: 7
+    ttbar_FullHadronic:
+      legend: tt Full Hadronic
+      fill-color: "#00ffc7" 
+      order: 6
+    ttbar_SemiLeptonic:
+      legend: tt Semi Leptonic
+      fill-color: "#8e0a19"
+      order: 5
+    ST:
+      fill-color: "#ffc800"    
+      legend: Single Top
+      order: 4
+    ZZ: 
+      fill-color: "#ff4800"
+      legend: ZZ
+      order: 3
+    SM:
+      fill-color: "#ff0038"
+      legend: tth, Zh
+      order: 2
+    others: 
+      fill-color: "#ff8d58"
+      legend: others (tt+V, W+Jets , VVV, VV)
+      order: 1    
+
+  plotdefaults:
+      y-axis: Events
+      log-y: both
+      y-axis-show-zero: True
+      save-extensions: [pdf, png]
+      show-ratio: True
+      ratio-y-axis-range: [0.6, 1.4]
+      sort-by-yields: False
+  systematics:
+    # on the jets
+    - jer
+    - jesTotal
+    #- JetpuID_eff_mc_loOse
+    #- JetpuID_mistagrates_mc_loOse
+    #- JetpuID_eff_sf_loOse
+    #- JetpuID_mistagrates_sf_loOse
+    #- JetpuID_eff_data_loOse
+    #- JetpuID_mistagrates_data_loOse
+    # on the lepton id /iso /reco
+    - muid
+    - muiso
+    - elid
+    - ele_reco
+    # the default pu 
+    - puweights2017_Fall17
+      # on the samples with wrong PU profile
+    - puWeight_DYJetsToLL_M_10to50
+    - puWeight_ST_tW_antitop_5f
+    # on the trigger
+    - eleltrig
+    - mumutrig
+    - elmutrig
+    - mueltrig
+    - single_mutrig
+    - single_eletrig
+    # sys from theory  
+    - qcdScale
+    - psISR
+    - psFSR
+    # L1 pre-firing event correction weight
+    - L1PreFiring 
+    # on the cross section
+    # --- ttbar 
+    - TTHadronicxsc: {type: const, value: 1.0007530199388735263 , on: 'TTHadronic'} # uncer= 0.5174 pb    ---> ok 
+    #- TTTo2L2Nuxsc: {type: const, value: , on: 'TTTo2L2Nu'} # uncer= +4.8%-6.1%
+    #- TTToSemiLeptonicxsc: {type: const, value: , on: 'TTToSemiLeptonicxsc'} # uncer= +4.8%-6.1% 
+    # ---- DY 
+    - DYJetsToLLxsc: {type: const, value: 1.00036457938013915244, on: 'DYJetsToLL_M-10to50'}  #uncer= 5.764 pb
+    # ----- ST 
+    - ST_s-channel_4fxsc: {type: const, value: 1.0009446524064172, on: 'ST_s-channel_4f'}   # uncer= 0.003533 pb
+    - ST_tW_top_5fxsc: {type: const, value: 1.000806932111143 , on: 'ST_tW_top_5f'}   # uncer= 0.02817 pb
+    - ST_tW_antitop_5fxsc: {type: const, value: 1.0008084072061767, on: 'ST_tW_antitop_5f'}  # uncer = 0.02827 pb
+    - ST_t-channel_antitop_4fxsc: {type: const, value: 1.005134737152113, on: 'ST_tchannel_antitop_4f'} # uncer= 0.3487 pb
+    - ST_t-channel_top_4fxsc: {type: const, value: 1.0056522506619594, on: 'ST_tchannel_top_4f'} # uncer=  0.6404  pb
