@@ -4,10 +4,8 @@ from bamboo.scalefactors import binningVariables_nano
 
 from bamboo import treefunctions as op
 from bamboo import scalefactors
-
-from bamboo.logging import getLogger
-logger = getLogger(__name__)
-
+import logging
+logger = logging.getLogger("ttbar Plotter")
 
 from itertools import chain
 import os.path
@@ -17,9 +15,12 @@ import argparse
 import sys
 import os
 
-sys.path.append('/home/ucl/cp3/kjaffel/bamboodev/b-taggingEfficienciesMeasurment')
-import utils
+btagPath = os.path.dirname(__file__)
+if btagPath not in sys.path:
+    sys.path.append(btagPath)
 
+from ControlPlots import *
+from utils import *
 binningVariables = {
       "Eta"       : lambda obj : obj.eta
     , "ClusEta"   : lambda obj : obj.eta + obj.deltaEtaSC
@@ -33,6 +34,9 @@ def localizeSF(aPath, era="2018"):
 
 def localize_trigger(aPath):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "TriggerEfficienciesStudies", aPath)
+
+def localize_PileupJetID(aPath):
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), "PileupJetID", aPath)
 
 myScaleFactors = {
     "2018": {
@@ -56,7 +60,14 @@ myScaleFactors = {
                                           for wp in ("Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
             "elemuLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp)) 
                                           for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg")),
-    }
+            "doubleEleLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp))
+                                                for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
+            "doubleMuLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp))
+                                                for wp in ("Muon_DoubleIsoMu17Mu8_IsoMu17leg", "Muon_DoubleIsoMu17TkMu8_IsoMu8legORTkMu8leg", "Muon_DoubleIsoMu17Mu8_IsoMu17leg", "Muon_DoubleIsoMu17TkMu8_IsoMu8legORTkMu8leg")),
+            
+            "JetId_InHighPileup_2018_102X" : tuple(localize_PileupJetID("puID_SFs_2018{0}.json".format(wp))
+                                            for wp in ("L", "M", "T")),
+        }
 
     # fill in some defaults: myScalefactors and bamboo.scalefactors.binningVariables_nano
 def getScaleFactor(objType, key, periods=None, combine=None, isElectron=False, systName=None):
@@ -64,16 +75,7 @@ def getScaleFactor(objType, key, periods=None, combine=None, isElectron=False, s
                                         sfLib=myScaleFactors, paramDefs=scalefactors.binningVariables_nano,
                                         isElectron=isElectron, systName=systName)
 
-def safeget(dct, *keys):
-    for key in keys:
-        try:
-            dct = dct[key]
-        except KeyError:
-            return None
-    return dct
-
-
-def METFilter(flags, era):
+def METFilter(flags, era, isMC):
     # from https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
     if era == '2018':
         cuts = [
@@ -84,6 +86,9 @@ def METFilter(flags, era):
                 flags.EcalDeadCellTriggerPrimitiveFilter,
                 flags.BadPFMuonFilter,
                 flags.ecalBadCalibFilterV2 ]
+    if not isMC:
+        cuts.append(flags.eeBadScFilter)
+
     return cuts
 
 class METcorrection(object):
@@ -142,18 +147,19 @@ def ReturnVarAtIndex(tagger, wp, bjets, idx):
     else:
         raise RuntimeError("Something went wrong in returning {0} discriminator !".format(tagger))
 
-#def TwoTagCount(uname, histosName, key, jets, bjets, _2l2jsel, _2l2bjsel, iPT, ptBin):
-def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel):#, isMC):
-    from bamboo.plots import Plot, SummedPlot
+def TwoTagCount(uname, key, OsOflep, jets, rawbjets, jnotbtagged, _2l2nobjets, bjets, _2l2jsel, _2l2bjsel, WP, nbrj, isMC):
+    from bambooToOls import Plot
+    from bamboo.plots import SummedPlot
     from bamboo.plots import EquidistantBinning as EqBin
     from bamboo import treefunctions as op
     plots=[]
     for iPT in range(-1,len(lowerPtBinEdges)):
         ptBin= ReturnPtLabel(iPT)
-        histosName = uname+"_only2_twoTags_"+ key + "_"+ ptBin
+        histosName = uname+"_{0}_twoTags_".format(nbrj) + key + "_"+ ptBin
         if ptBin=="Inclusive": 
             _2l2jsel_ptBin  = _2l2jsel
             _2l2bjsel_ptBin = _2l2bjsel
+            _2l2nobjets_ptBin = _2l2nobjets
         else:
             if ptBin =="600toInf":
                 minpt = 600.
@@ -161,122 +167,98 @@ def TwoTagCount(uname, key, jets, bjets, _2l2jsel, _2l2bjsel):#, isMC):
             else:
                 minpt = lowerPtBinEdges[iPT]
                 maxpt = lowerPtBinEdges[iPT+1]
-                print ("******************************", minpt, maxpt, ptBin)
-            # FIXME 
-            _2l2bjsel_ptBin = dict((key, SelNoPtBinApplied.refine("{0}_2bJets_{1}_{2}ptBin".format(uname, key, ptBin), cut=(op.in_range(minpt, bjets[0].pt, maxpt), op.in_range(minpt, bjets[1].pt, maxpt)) )) for key, SelNoPtBinApplied in _2l2bjsel.items())
-            _2l2jsel_ptBin  = _2l2jsel.refine("{0}_2Jets_Fall_inptBin_{1}_{2}".format(uname, key, ptBin), cut=(op.in_range(minpt, jets[0].pt, maxpt), op.in_range(minpt, jets[1].pt, maxpt)))
-        print("start filling histos in ", ptBin)
+                            
+            _2l2bjsel_ptBin = ((_2l2bjsel.get(key)).refine("{0}_2bJets_{1}_{2}ptBin".format(uname, key, ptBin), cut=[op.in_range(minpt, bjets[0].pt, maxpt), op.in_range(minpt, bjets[1].pt, maxpt)] )) 
+            #_2l2bjsel_ptBin = ((_2l2bjsel.get(key)).refine("{0}_2bJets_{1}_{2}ptBin".format(uname, key, ptBin), cut=[op.in_range(minpt, jets[0].pt, maxpt), op.in_range(minpt, jets[1].pt, maxpt)] ))
+            _2l2nobjets_ptBin = ((_2l2nobjets.get(key)).refine("{0}_2Jets_NOTbtagged_{1}_{2}ptBin".format(uname, key, ptBin), cut=[op.in_range(minpt, jnotbtagged[0].pt, maxpt), op.in_range(minpt, jnotbtagged[1].pt, maxpt)] ))
+            _2l2jsel_ptBin = (_2l2jsel_ptBin.refine("{0}_2Jets_{1}_{2}ptBin".format(uname, key, ptBin), cut=[op.in_range(minpt, jets[0].pt, maxpt), op.in_range(minpt, jets[1].pt, maxpt)] )) 
+            
+            #tagger=key.replace(WP, "")
+            #passing_bjets=safeget(rawbjets, tagger, WP)
+                
+            #_2l2bjsel_ptBin = {
+            #    key :  _2l2jsel_ptBin.refine("{0}_2bJets_{1}_{2}ptBin".format(uname, key, ptBin),
+            #                                                        cut=[ op.rng_len(passing_bjets) ==2 ]),
+            #                }
+        
+        logger.info("Start filling histos ...")
         
         isLight  = lambda abshf : op.OR(abshf == 21, op.in_range(1, abshf, 3))
         isCharm  = lambda abshf : abshf == 4
         isBeauty = lambda abshf : abshf == 5
         TwoTagCrossFlavour = {
-                    #"2b"    : lambda f1, f2 : op.AND(isBeauty(f1), isBeauty(f2)),
+                    "2b"    : lambda f1, f2 : op.AND(isBeauty(f1), isBeauty(f2)),
                     "1b_1c" : lambda f1, f2 : op.OR(op.AND(isBeauty(f1), isCharm(f2)), op.AND(isBeauty(f2), isCharm(f1))),
                     "1b_1l" : lambda f1, f2 : op.OR(op.AND(isBeauty(f1), isLight(f2)), op.AND(isBeauty(f2), isLight(f1))),
                     "1c_1l" : lambda f1, f2 : op.OR(op.AND(isCharm(f1), isLight(f2)), op.AND(isCharm(f2), isLight(f1))),
                     "2c"    : lambda f1, f2 : op.AND(isCharm(f1), isCharm(f2)),
                     "2l"    : lambda f1, f2 : op.AND(isLight(f1), isLight(f2)),
                     }
-        twoTagCrossFlavour_categories = dict((catName, (_2l2bjsel_ptBin.get(key)).refine("{0}_TwoTagCross_{1}_{2}_{3}".format(uname, catName, key, ptBin), cut=catSel(op.abs(bjets[0].hadronFlavour), op.abs(bjets[1].hadronFlavour)))) for catName, catSel in TwoTagCrossFlavour.items())
-        # then fill a histogram for each (you can use `enumerate` to fill a different bin for each selection, and then make a `SummedPlot`)
-        #for BinIDX, (catName, catSel) in enumerate(twoTagCrossFlavour_categories.items()):
+        sel = (_2l2bjsel_ptBin.get(key) if ptBin == "Inclusive" else (_2l2bjsel_ptBin))
+        nobjets_sel = (_2l2nobjets_ptBin.get(key) if ptBin == "Inclusive" else (_2l2nobjets_ptBin))
+        #sel = _2l2bjsel_ptBin.get(key)
+        twoTagCrossFlavour_categories = dict((catName, sel.refine("{0}_TwoTagCross_{1}_{2}_{3}".format(uname, catName, key, ptBin), cut=catSel(op.abs(bjets[0].hadronFlavour), op.abs(bjets[1].hadronFlavour))if isMC else None )) for catName, catSel in TwoTagCrossFlavour.items())
+            
+        TwoBeautyWith012PassBtagWP = dict((catName, _2l2jsel_ptBin.refine("{0}_TwoBeauty_{1}_{2}_{3}".format(uname, catName, key, ptBin), cut=catSel(op.abs(jets[0].hadronFlavour), op.abs(jets[1].hadronFlavour))if isMC else None )) for catName, catSel in TwoTagCrossFlavour.items())
         
+        twobeauty_failsbtag = dict((catName, nobjets_sel.refine("{0}_2lep_2jets_failsbtagged_truthflav_{1}_{2}_{3}".format(uname, catName, key, ptBin), cut=catSel(op.abs(jnotbtagged[0].hadronFlavour), op.abs(jnotbtagged[1].hadronFlavour))if isMC else None )) for catName, catSel in TwoTagCrossFlavour.items())
+
+        # other mc (falv at least 1b) - 2btagged
         Twobtagged_Truth_BeautyCharm = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_BeautyCharm_{1}_{2}".format(uname, key, ptBin),
-                                                    op.c_int(0), twoTagCrossFlavour_categories.get("1b_1c"),
-                                                    EqBin(2, 0., 6.),
-                                                    title="N Fake b-tags (mc truth)",
+                                                    op.c_int(0)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("1b_1c"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
                                                     plotopts=utils.getOpts(uname, **{"log-y": True}))
 
         Twobtagged_Truth_BeautyLight = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_BeautyLight_{1}_{2}".format(uname, key, ptBin),
-                                                    op.c_int(1), twoTagCrossFlavour_categories.get("1b_1l"),
-                                                    EqBin(2, 0., 6.),
-                                                    title="N Fake b-tags (mc truth)",
+                                                    op.c_int(0)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("1b_1l"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
+        
+        Twobtagged_Truth_CharmLight = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_CharmLight_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(0)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("1c_1l"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
                                                     plotopts=utils.getOpts(uname, **{"log-y": True}))
 
-        Twobtagged_Truth_CharmLight = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_CharmLight_{1}_{2}".format(uname, key, ptBin),
-                                                    op.c_int(2), twoTagCrossFlavour_categories.get("1c_1l"),
-                                                    EqBin(2, 0., 6.),
-                                                    title="N Fake b-tags (mc truth)",
-                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
-    
         Twobtagged_Truth_2Charm = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_2Charm_{1}_{2}".format(uname, key, ptBin),
-                                                    op.c_int(3), twoTagCrossFlavour_categories.get("2c"),
-                                                    EqBin(2, 0., 6.),
-                                                    title="N Fake b-tags (mc truth)",
+                                                    op.c_int(0)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("2c"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
                                                     plotopts=utils.getOpts(uname, **{"log-y": True}))
         
         Twobtagged_Truth_2Light = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_2Light_{1}_{2}".format(uname, key, ptBin),
-                                                    op.c_int(4), twoTagCrossFlavour_categories.get("2l"),
-                                                    EqBin(2, 0., 6.),
-                                                    title="N Fake b-tags (mc truth)",
+                                                    op.c_int(0)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("2l"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
+        # 2bmc truth flav 2b with (0 or 1 btagged ): means fails btagging requirements 
+        NOTbtagged_Truth_2Beauty = Plot.make1D("{0}_Events_2l2j_NOTbtagged_TruthFlav_2Beauty_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(1)if isMC else op.c_int(-1), twobeauty_failsbtag.get("2b"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
+                                                    plotopts=utils.getOpts(uname, **{"log-y": True}))
+        # 2bmc truth flav 2b - 2btagged 
+        Twobtagged_Truth_2Beauty = Plot.make1D("{0}_Events_2l2j_2btagged_TruthFlav_2Beauty_{1}_{2}".format(uname, key, ptBin),
+                                                    op.c_int(2)if isMC else op.c_int(-1), twoTagCrossFlavour_categories.get("2b"),
+                                                    EqBin(4, -1., 3.),
+                                                    title="N Fake %s b-tags (mc truth)"%WP,
                                                     plotopts=utils.getOpts(uname, **{"log-y": True}))
         
-            
-        plots.append(SummedPlot("{0}_Events_Fake2btaggedJets_{1}_{2}".format(uname, key, ptBin),
-                    [Twobtagged_Truth_BeautyCharm, Twobtagged_Truth_BeautyLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_2Light],
-                    title="N Fake b-tags (mc truth)",
-                    plotopts=utils.getOpts(uname, **{"log-y": True})))
-            
-            
-    return plots 
-           # if isMC:
-           #     flavour1=(bjets[0].hadronFlavour)
-           #     flavour2=(bjets[1].hadronFlavour)
-    
-           #     TwoTagCrossFlavour= {
-           #     # both are b-hadron (truth flav): but at last 1 is btagged --> it can be  0 passing or 1 passing or 2 passing my btagging wp for specific tagger 
-           #     #       "2b"   : [flavour1 == 5, flavour2 == 5],
-           #     # these catgories  : both jet are btagged --> but one at least is light or charm hadron flav
-           #         "1b_1c": [flavour1==5,  flavour2==4],
-           #         "1b_1l": [flavour1==5, (flavour2==21 or (flavour2>0 and flavour2<4))],
-           #         "1c_1l": [flavour1==4, (flavour2==21 or (flavour2>0 and flavour2<4))],
-           #         "2c"   : [flavour1==4,  flavour2==4],
-           #         "2l"   : [(flavour1==21 or (flavour1>0 and flavour1<4)), (flavour2==21 or (flavour2>0 and flavour2<4))]
-           #     }
-           # # FIXME : I am counting the number of bjets that pass the hadron flavour 5 but not the number of events          
-            #nTrueB = (op.rng_count(bjets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
-        
-            #plots.append(Plot.make1D("{0}_Events_2l2j_2btagged_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
-            #                            nTrueB, _2l2bjsel_ptBin.get(key),                                        
-            #                            EqBin(2, 0., 2.),
-            #                            title="N b-tags (mc truth)",
-            #                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            # FIXME 
-            #nFakebJet_2btagged = (op.rng_count(bjets, lambda j : [j[0].hadronFlavour,j[1].hadronFlavour] == op.OR(*chain.from_iterable(TwoTagCrossFlavour.values()))) if isMC else op.c_int(-1))
-                    
-           #      nTrueB = (op.rng_count(jets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
-           #plots.append(Plot.make1D("{0}_Events_2l2j_truthFlav_2b_{1}_{2}".format(uname, key, ptBin), 
-           #                                nTrueB, _2l2jsel_ptBin,                                        
-           #                                EqBin(2, 0., 2.),
-           #                                title="N b-tags (mc truth)",
-           #                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-           #     tagger=key.replace(WP, "")
-           #      if tagger == "DeepFlavour":
-           #         bjetsfortagger= bJets_PassdeepflavourWP
-           #     else:
-           #         bjetsfortagger= bJets_PassdeepcsvWP
-        
-           #         nbtagged = {"0jet_btagged": op.rng_len(bjetsfortagger) ==0 ,
-           #                     "1jet_btagged": op.rng_len(bjetsfortagger) ==1 ,
-           #                     "2jet_btagged": op.rng_len(bjetsfortagger) ==2 ,
-           #                 }
+        #plots.append( Twobtagged_Truth_BeautyCharm)
+        #plots.append( Twobtagged_Truth_BeautyLight)
+        #plots.append( Twobtagged_Truth_CharmLight)
+        #plots.append( Twobtagged_Truth_2Charm)
+        #plots.append( Twobtagged_Truth_2Light)
 
-           #     #nTrueBFlav = (op.rng_count(bjets, lambda j : j.hadronFlavour == 5) if isMC else op.c_int(-1))
-           #     #plots.append(Plot.make1D("{0}_Events_2l2j_truthFlav_2b_{1}_{2}_ver1".format(uname, key, ptBin), 
-           #     #                            nTrueBFlav, 
-           #     #                            _2l2jsel.refine("2l2j_truthFlav_2b_{0}btagged".format(),cut=op.OR(*nbtagged.values())),
-           #     #                            EqBin(2, 0., 2.),
-           #     #                            title="N b-tags (mc truth)",
-           #     #                            plotopts=utils.getOpts(uname)))
-        
-           #     #nFakeJet_2btagged = (op.rng_count(bjets, lambda j : [j[0].hadronFlavour,j[1].hadronFlavour] == op.OR(*TwoTagCrossFlavour.values())) if isMC else op.c_int(-1))
-           #     #plots.append(Plot.make1D("{0}_Events_2l2j_2btagged_truthFlav_1atleast_light_or_charm_{1}_{2}_ver1".format(uname, key, ptBin),
-           #     #                            nFakeJet_2btagged,
-           #     #                            _2l2bjsel.get(key),
-           #     #                            EqBin(2, 0., 2.),
-           #     #                            title="N b-tags (mc truth)",
-           #     #                            plotopts=utils.getOpts(uname)))
+        plots.append(SummedPlot("{0}_{1}_twoTags_{2}_{3}".format(uname, nbrj, key, ptBin),
+                    [Twobtagged_Truth_BeautyCharm, Twobtagged_Truth_BeautyLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_CharmLight, Twobtagged_Truth_2Light, 
+                     Twobtagged_Truth_2Beauty, NOTbtagged_Truth_2Beauty],
+                    title="N Fake %s b-tags (mc truth)"%WP,
+                    plotopts=utils.getOpts(uname, **{"log-y": True})))
+    return plots 
+
 
 class TTbarDileptonMeasurment(NanoAODHistoModule):
     """
@@ -291,7 +273,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                             "y-axis"           : "Events",
                             "log-y"            : "both",
                             "y-axis-show-zero" : True,
-                            "save-extensions"  : ["pdf"],
+                            "save-extensions"  : ["pdf", "png"],
                             "show-ratio"       : True,
                             "sort-by-yields"   : False,
                             }
@@ -299,6 +281,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         self.doSysts = self.args.systematic
     def addArgs(self, parser):
         super(TTbarDileptonMeasurment, self).addArgs(parser)
+        parser.add_argument("--backend", type=str, default="dataframe", help="Backend to use, 'dataframe' (default) or 'lazy'")
         parser.add_argument("-s", "--systematic", action="store_true", help="Produce systematic variations")
 
     def prepareTree(self, tree, sample=None, sampleCfg=None):
@@ -308,8 +291,16 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         ## initializes tree.Jet.calc so should be called first (better: use super() instead)
         # JEC's Recommendation for Full RunII: https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
         # JER : -----------------------------: https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution
-        
-        tree,noSel,be,lumiArgs = NanoAODHistoModule.prepareTree(self, tree, sample=sample, sampleCfg=sampleCfg, calcToAdd=["nJet", metName, "nMuon"])
+       
+        from bamboo.treedecorators import NanoAODDescription, nanoRochesterCalc, nanoJetMETCalc, nanoJetMETCalc_METFixEE2017
+
+        tree,noSel,be,lumiArgs = NanoAODHistoModule.prepareTree(self, tree, 
+                                                                    sample=sample, 
+                                                                    sampleCfg=sampleCfg, 
+                                                                    description=NanoAODDescription.get("v5", year=(era if era else "2016"), 
+                                                                    isMC=isMC, 
+                                                                    systVariations=[ nanoRochesterCalc, (nanoJetMETCalc_METFixEE2017 if era == "2017" else nanoJetMETCalc) ]),
+                                                                    lazyBackend   = (self.args.backend == "lazy")) ## will do Jet and MET variations, and the Rochester correction
         triggersPerPrimaryDataset = {}
         jec, smear, jesUncertaintySources = None, None, None
 
@@ -320,8 +311,6 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         if era == "2018":
             configureRochesterCorrection(tree._Muon, os.path.join(os.path.dirname(__file__), "data", "RoccoR2018.txt"), isMC=isMC, backend=be, uName=sample)
 
-
-            ## TODO add single muon single el trigger
             triggersPerPrimaryDataset = {
                 "MuonEG"     : [ tree.HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,
                                  tree.HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ,
@@ -334,7 +323,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                  
                                  tree.HLT.Mu27_Ele37_CaloIdL_MW, 
                                  tree.HLT.Mu37_Ele27_CaloIdL_MW],
-                "SingleElectron":[ tree.HLT.Ele32_WPTight_Gsf  ],
+                "EGamma":[ tree.HLT.Ele32_WPTight_Gsf  ],
                 # OldMu100 and TkMu100 are recommend to recover inefficiencies at high pt 
                 # here: (https://indico.cern.ch/event/766895/contributions/3184188/attachments/1739394/2814214/IdTrigEff_HighPtMu_Min_20181023_v2.pdf)
                 "SingleMuon": [ tree.HLT.IsoMu24, 
@@ -377,7 +366,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         if self.isMC(sample):
             noSel = noSel.refine("genWeight", weight=tree.genWeight, cut=op.OR(*chain.from_iterable(triggersPerPrimaryDataset.values())), autoSyst=self.doSysts)
             if self.doSysts:
-                logger.info("Adding QCD scale variations")
+                logger.info("Adding FSR, ISR and QCD scale variations")
                 noSel = utils.addTheorySystematics(self, tree, noSel)
         else:
             noSel = noSel.refine("withTrig", cut=makeMultiPrimaryDatasetTriggerSelection(sample, triggersPerPrimaryDataset) )
@@ -388,34 +377,38 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
 
         from bamboo.analysisutils import forceDefine
         from bamboo.plots import EquidistantBinning as EqBin
-        from bamboo.plots import Plot, SummedPlot
+        from bambooToOls import Plot
+        from bamboo.plots import SummedPlot
         from bamboo import treefunctions as op
 
+        isMC = self.isMC(sample)
         era = sampleCfg.get("era") if sampleCfg else None
-        noSel = noSel.refine("passMETFlags", cut=METFilter(t.Flag, era) )
+        noSel = noSel.refine("passMETFlags", cut=METFilter(t.Flag, era, isMC) )
         puWeightsFile = None
         
         if era == "2018":
-            puWeightsFile = os.path.join(os.path.dirname(__file__), "data", "puweights2018.json")
+            puWeightsFile = os.path.join(os.path.dirname(__file__), "data", "puweights2018_Autumn18.json")
         
         if self.isMC(sample) and puWeightsFile is not None:
             from bamboo.analysisutils import makePileupWeight
             noSel = noSel.refine("puWeight", weight=makePileupWeight(puWeightsFile, t.Pileup_nTrueInt, systName="pileup"))
         
-        isMC = self.isMC(sample)
         plots = []
         forceDefine(t._Muon.calcProd, noSel)
 
         sorted_muons = op.sort(t.Muon, lambda mu : -mu.pt)
-        muons = op.select(sorted_muons, lambda mu : op.AND(mu.pt > 20., op.abs(mu.eta) < 2.4, mu.mediumId, mu.pfRelIso04_all<0.15, op.abs(mu.sip3d) < 4.))
+        muons = op.select(sorted_muons, lambda mu : op.AND(mu.pt > 10., op.abs(mu.eta) < 2.4, mu.mediumId, mu.pfRelIso04_all<0.15, op.abs(mu.sip3d) < 4.))
                      
         muonIDSF = getScaleFactor("lepton", (era, "muon_ID", "cut_medium"), systName="muon_ID")
         muonIsoSF = getScaleFactor("lepton", (era, "muon_iso", "iso_tight_id_medium"), systName="muon_iso")
         # single muon trigger
+        # FIXME
         #muonTriggerSF = getScaleFactor("lepton", (era, "muon_trigger"), systName="muon_trigger")
 
         sorted_electrons = op.sort(t.Electron, lambda ele : -ele.pt)
-        electrons = op.select(sorted_electrons, lambda ele : op.AND(ele.pt > 20., op.abs(ele.eta) < 2.5 , ele.cutBased>=3, op.abs(ele.sip3d) < 4., op.OR(op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.1), op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.2) ))) 
+        electrons = op.select(sorted_electrons, lambda ele : op.AND(ele.pt > 15., op.abs(ele.eta) < 2.5 , ele.cutBased>=3, op.abs(ele.sip3d) < 4., 
+                                                                    op.OR(op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.1), 
+                                                                          op.AND(op.abs(ele.dxy) < 0.05, op.abs(ele.dz) < 0.2) ))) 
         
         eleIDSF = getScaleFactor("lepton", (era, "electron_ID", "cut_medium"), isElectron=True, systName="ele_ID")
         eleRecoSF = getScaleFactor("lepton", (era, "electron_reco"), isElectron=True, systName="ele_reco")
@@ -423,11 +416,14 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         #eleTriggerSF = getScaleFactor("lepton", (era, "electron_trigger"), isElectron=True, systName="ele_trigger")
 
         sorted_jets=op.sort(t.Jet, lambda j : -j.pt)
-        jetsSel = op.select(sorted_jets, lambda j : op.AND(j.pt > 30., op.abs(j.eta)< 2.5, j.jetId &2))   
+        jetsSel = op.select(sorted_jets, lambda j : op.AND(j.pt > 30., op.abs(j.eta)< 2.5, j.jetId &4))
+                                                            #,op.AND( op.in_range(30., j.pt, 50.), j.puId==7 ))) #j.jetId &2)) old cut 
         
         # exclude from the jetsSel any jet that happens to include within its reconstruction cone a muon or an electron.
-        jets= op.select(jetsSel, lambda j : op.AND(op.NOT(op.rng_any(electrons, lambda ele : op.deltaR(j.p4, ele.p4) < 0.3 )), op.NOT(op.rng_any(muons, lambda mu : op.deltaR(j.p4, mu.p4) < 0.3 ))))
-        
+        jets= op.select(jetsSel, lambda j : op.AND(op.NOT(op.rng_any(electrons, lambda ele : op.deltaR(j.p4, ele.p4) < 0.4 )), 
+                                                   op.NOT(op.rng_any(muons, lambda mu : op.deltaR(j.p4, mu.p4) < 0.4 ))))
+
+        #jetpuId = getScaleFactor("jet", ("JetId_InHighPileup_{0}_94X".format(era).replace("94X", "102X" if era=="2018" else "94X"), "puId_T"), systName="JetpuID_T")
         # order jets 
         cleanedJetsByDeepFlav = op.sort(jets, lambda j: -j.btagDeepFlavB)
         cleanedJetsByDeepB = op.sort(jets, lambda j: -j.btagDeepB)
@@ -444,6 +440,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 }
         
         bjets = {}
+        failings = {}
         # bjets ={ "DeepFlavour": {"L": jets pass loose  , "M":  jets pass medium  , "T":jets pass tight    }     
         #           "DeepCSV":    {"L":    ---           , "M":         ---        , "T":   ----            }
         #        }
@@ -451,7 +448,9 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         for tagger  in btaggingWPs.keys():
             
             bJets_deepflavour ={}
+            failing_deepflavour = {}
             bJets_deepcsv ={}
+            failing_deepcsv = {}
             
             for wp in sorted(WorkingPoints):
                 
@@ -464,18 +463,22 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                     print ("btag_{0}_94X".format(era).replace("94X", "102X" if era=="2018" else "94X"), "{0}_{1}".format('DeepJet', suffix))
                     
                     bJets_deepflavour[wp] = op.select(cleanedJetsByDeepFlav, lambda j : j.btagDeepFlavB >= btaggingWPs[tagger][era][idx] )
+                    failing_deepflavour[wp] = op.select(cleanedJetsByDeepFlav, lambda j : j.btagDeepFlavB < btaggingWPs[tagger][era][idx] )
                     Jet_DeepFlavourBDisc = { "BTagDiscri": lambda j : j.btagDeepFlavB }
                     
                     bjets[tagger]=bJets_deepflavour
+                    failings[tagger] = failing_deepflavour
                     
                 else:
                     print ("Btagging: Era= {0}, Tagger={1}, Pass_{2}_working_point={3}".format(era, tagger, suffix, btaggingWPs[tagger][era][idx] ))
                     print ("btag_{0}_94X".format(era).replace("94X", "102X" if era=="2018" else "94X"), "{0}_{1}".format('DeepJet', suffix))
                     
                     bJets_deepcsv[wp] = op.select(cleanedJetsByDeepB, lambda j : j.btagDeepB >= btaggingWPs[tagger][era][idx] )   
+                    failing_deepcsv[wp] = op.select(cleanedJetsByDeepB, lambda j : j.btagDeepB < btaggingWPs[tagger][era][idx] )
                     Jet_DeepCSVBDis = { "BTagDiscri": lambda j : j.btagDeepB }
                     
                     bjets[tagger]=bJets_deepcsv
+                    failings[tagger] = failing_deepcsv
         
 
         MET = t.MET if era != "2017" else t.METFixEE2017
@@ -483,22 +486,31 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         
         #The contribution from Z + jets events is reduced by applying a veto around the Z boson mass when the two leptons have the same flavour, ( | Mll -MZ | > 10 GeV).
         osdilep = lambda l1,l2 : op.AND(l1.charge != l2.charge, op.invariant_mass(l1.p4, l2.p4) >12. )
-        Zboson_Vetocut = lambda l1, l2 : op.abs(op.invariant_mass(l1.p4, l2.p4) - 90.) > 10.
-        
+        Zboson_Vetocut = lambda l1, l2 : op.AND(l1.charge != l2.charge, op.abs(op.invariant_mass(l1.p4, l2.p4) - 90.) > 10. )
+        osdilep_Z = lambda l1,l2 : op.AND(l1.charge != l2.charge, op.in_range(70., op.invariant_mass(l1.p4, l2.p4), 120.))
+
         osll = {
                 "elmu": op.combine((electrons, muons), pred=lambda ele,mu : op.AND(osdilep(ele,mu), ele.pt > mu.pt)),
-                "muel": op.combine((muons, electrons), pred=lambda mu,ele : op.AND(osdilep(mu,ele), mu.pt > ele.pt))
+                "muel": op.combine((muons, electrons), pred=lambda mu,ele : op.AND(osdilep(mu,ele), mu.pt > ele.pt)),
+
+                #"mumu" : op.combine(muons, N=2, pred= osdilep_Z),
+                #"elel" : op.combine(electrons, N=2, pred=osdilep_Z)
              }
         
         elemuTrigSF = getScaleFactor("dilepton", ("elemuLeg_HHMoriond17_2016"), systName="elmutrig")
         mueleTrigSF = getScaleFactor("dilepton", ("mueleLeg_HHMoriond17_2016"), systName="mueltrig")
-       
+        doubleMuTrigSF = getScaleFactor("dilepton", ("doubleMuLeg_HHMoriond17_2016"), systName="mumutrig")
+        doubleEleTrigSF = getScaleFactor("dilepton", ("doubleEleLeg_HHMoriond17_2016"), systName="eleltrig")
+
         osllSFs = {
-                "elmu" : (lambda lep :  [ muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), elemuTrigSF(lep)]), #, eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
-                "muel" : (lambda lep :  [ muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), mueleTrigSF(lep)])  #  eleTriggerSF(lep[1]), muonTriggerSF(lep[0]) ]),
+                "elmu" : (lambda lep :  [ muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), elemuTrigSF(lep)]),#, eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
+                "muel" : (lambda lep :  [ muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), mueleTrigSF(lep)])#,  eleTriggerSF(lep[1]), muonTriggerSF(lep[0])])
+                
+                #"mumu" : (lambda ll : [ muonIDSF(ll[0]), muonIDSF(ll[1]), muonIsoSF(ll[0]), muonIsoSF(ll[1]), doubleMuTrigSF(ll)]),
+                #"elel" : (lambda ll : [ eleIDSF(ll[0]), eleIDSF(ll[1]), eleRecoSF(ll[0]), eleRecoSF(ll[1]), doubleEleTrigSF(ll)])
             }
 
-        osllcatrng = lambda catrng : op.rng_len(catrng) > 0
+        osllcatrng = lambda catrng : op.AND(op.rng_len(catrng) > 0, catrng[0][0].pt > 25.)
         hasOSLL = noSel.refine("hasOSLL", cut=op.OR(*( osllcatrng(rng) for rng in osll.values())))
         
         forceDefine(t._Jet.calcProd, hasOSLL)
@@ -509,220 +521,133 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                             hasOSLL.refine("{0}_EventSelection".format(channel), cut=osllcatrng(leadpair), weight=(osllSFs[channel](leadpair[0]) if isMC else None))
                             )) for channel, leadpair in osll.items())
 
-        def makeJetPlots(sel, jets, uname):
-            maxJet=2
-            binScaling=1
-            plots = []
-            for i in range(maxJet):
-                plots.append(Plot.make1D(f"{uname}_jet{i+1}_pt", jets[i].pt, sel,
-                            EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), title=f"{utils.getCounter(i+1)} jet p_{{T}} (GeV)",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-                plots.append(Plot.make1D(f"{uname}_jet{i+1}_eta", jets[i].eta, sel,
-                            EqBin(50 // binScaling, -2.4, 2.4), title=f"{utils.getCounter(i+1)} jet eta",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-                plots.append(Plot.make1D(f"{uname}_jet{i+1}_phi", jets[i].phi, sel,
-                            EqBin(50 // binScaling, -3.1416, 3.1416), title=f"{utils.getCounter(i+1)} jet phi", 
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-
-            return plots
-        
-        def makeBJetPlots(sel, bjets, wp, uname):
-            
-            plots = []
-            binScaling=1
-            for key in sel.keys():
-                tagger=key.replace(wp, "")
-                bjets_ = safeget(bjets, tagger, wp)
-                for i in range(2):
-                    plots.append(Plot.make1D(f"{uname}_bJet{i+1}_pT_{key}".format(key=key), 
-                                bjets_[i].pt,
-                                safeget(sel, key), 
-                                EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), 
-                                title=f"{utils.getCounter(i+1)} bJet pT [GeV]", 
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-                    
-                    plots.append(Plot.make1D(f"{uname}_bJet{i+1}_eta_{key}".format(key=key), 
-                                bjets_[i].eta,
-                                safeget(sel, key), 
-                                EqBin(50 // binScaling, -2.4, 2.4), 
-                                title=f"{utils.getCounter(i+1)} bJet eta", 
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-            
-                    plots.append(Plot.make1D(f"{uname}_bJet{i+1}_phi_{key}".format(key=key), 
-                                bjets_[i].phi, 
-                                safeget(sel, key),
-                                EqBin(50 // binScaling, -3.1416, 3.1416), 
-                                title=f"{utils.getCounter(i+1)} bJet phi", 
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-            return plots
-
-        def makeDiscriminatorPlots(sel, bjets, wp, uname):
-            plots = []
-            for key in sel.keys():
-                 
-                tagger=key.replace(wp, "")
-                bjets_ = safeget(bjets, tagger, wp)
-                idx = ( 0 if wp=="L" else ( 1 if wp=="M" else 2))
-                bin0 = btaggingWPs[tagger][era][idx]
-                for i in range(2):
-                    if tagger =="DeepFlavour":
-                        plots.append(Plot.make1D(f"{uname}_jet{i+1}_discr_deepFlav{wp}", 
-                                        bjets_[i].btagDeepFlavB,
-                                        safeget(sel, "DeepFlavour{0}".format(wp)),
-                                        EqBin(60, bin0, 1.), 
-                                        title="DeepFlavourBDisc {0}".format(wp), 
-                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-                    else:
-                        plots.append(Plot.make1D(f"{uname}_jet{i+1}_discr_deepCSV{wp}", 
-                                        bjets_[i].btagDeepB,
-                                        safeget(sel, "DeepCSV{0}".format(wp)),
-                                        EqBin(60, bin0, 1.), 
-                                        title= "DeepCSVBDisc {0}".format(wp), 
-                                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-                # Let's do L, M, T discr in one plot
-            return plots
-
-        def makeLeptonPlots(sel, leptons, uname):
-            binScaling=1
-            plots = []
-            if "mu" in uname:
-                flav = "Muon"
-            if "el" in uname:
-                flav = "Electron"
-            for i in range(2):
-                plots.append(Plot.make1D(f"{uname}_lep{i+1}_pt", leptons[i].pt, sel,
-                                EqBin(60 // binScaling, 30., 530.), title="%s p_{T} [GeV]" % flav,
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-                plots.append(Plot.make1D(f"{uname}_lep{i+1}_eta", leptons[i].eta, sel,
-                                EqBin(50 // binScaling, -2.4, 2.4), title="%s eta" % flav,
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-                plots.append(Plot.make1D(f"{uname}_lep{i+1}_phi", leptons[i].phi, sel,
-                                EqBin(50 // binScaling, -3.1416, 3.1416), title="%s phi" % flav,
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-            return plots
-        
-        def makeJetmultiplictyPlots(sel, jets, uname):
-            binScaling=1
-            plots=[]
-            plots.append(Plot.make1D(f"{uname}_Jet_mulmtiplicity", op.rng_len(jets), sel,
-                            EqBin(10, 0., 10.), title="Jet mulmtiplicity",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            # FIXME
-            #for i in range(2, 5):
-            #    event=sel.refine("{i}JetSel".format(i), cut=[ op.rng_len(jets) ==i ])
-            #    plots.append(Plot.make1D(f"{uname}_EventSelection", 
-            #                    event, sel,
-            #                    EqBin(10, 0., 5.), title="Event selection",
-            #                    plotopts=utils.getOpts(uname, **{"log-y": True})))
-            return plots
-
-        def makePrimaryANDSecondaryVerticesPlots(sel, uname):
-            binScaling=1
-            plots=[]
-            sv_mass=op.map(t.SV, lambda sv: sv.mass)
-            sv_eta=op.map(t.SV, lambda sv: sv.eta)
-            sv_phi=op.map(t.SV, lambda sv: sv.phi)
-            sv_pt=op.map(t.SV, lambda sv: sv.pt)
-
-            plots.append(Plot.make1D(f"{uname}_number_primary_reconstructed_vertices", 
-                            t.PV.npvs, sel, 
-                            EqBin(50 // binScaling, 0., 60.), title="reconstructed vertices",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            plots.append(Plot.make1D(f"{uname}_secondary_vertices_mass", 
-                            sv_mass, sel, 
-                            EqBin(50 // binScaling, 0., 450.), title="SV mass",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            plots.append(Plot.make1D(f"{uname}_secondary_vertices_eta", 
-                            sv_eta, sel, 
-                            EqBin(50 // binScaling,-2.4, 2.4), title="SV eta",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            plots.append(Plot.make1D(f"{uname}_secondary_vertices_phi", 
-                            sv_phi, sel, 
-                            EqBin(50 // binScaling, -3.1416, 3.1416), title="SV phi",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-            plots.append(Plot.make1D(f"{uname}_secondary_vertices_pt", 
-                            sv_pt, sel, 
-                            EqBin(50 // binScaling, 0., 450.), title="SV p_{T} [GeV]",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-
-            return plots
-
-        def makeMETPlots(sel, leptons, met, corrMET, uname):
-            binScaling=1
-            plots = []
-
-            plots.append(Plot.make1D(f"{uname}_MET_pt", met.pt, sel,
-                        EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-            plots.append(Plot.make1D(f"{uname}_MET_phi", met.phi, sel,
-                        EqBin(60 // binScaling, -3.1416, 3.1416), title="MET #phi",
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-            for i in range(2):
-                plots.append(Plot.make1D(f"{uname}_MET_lep{i+1}_deltaPhi",
-                            op.Phi_mpi_pi(leptons[i].phi - met.phi), sel, EqBin(60 // binScaling, -3.1416, 3.1416),
-                            title="#Delta #phi (lepton, MET)", plotopts=utils.getOpts(uname, **{"log-y": True})))
-                
-                MT = op.sqrt( 2. * met.pt * leptons[i].p4.Pt() * (1. - op.cos(op.Phi_mpi_pi(met.phi - leptons[i].p4.Phi()))) )
-                plots.append(Plot.make1D(f"{uname}_MET_MT_lep{i+1}", MT, sel,
-                            EqBin(60 // binScaling, 0., 600.), title="Lepton M_{T} [GeV]",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-
-            return plots
-
-
-        def MakeEXTRAMETPlots(sel, corrmet, met, uname):
-            plots = []
-            binScaling=1
-
-            plots.append(Plot.make1D(f"{uname}_met_pT",
-                        met.pt, sel, 
-                        EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-                        
-            plots.append(Plot.make1D(f"{uname}_xycorrmet_pT",
-                        corrmet.pt, sel,
-                        EqBin(60 // binScaling, 0., 600.), title="corrMET p_{T} [GeV]",
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
-
-            return plots
-
-
+        make_PrimaryANDSecondaryVerticesPlots = False
+        make_LeptonsPlots_LepSel = True
+        make_LeptonsPlots_LeptonPlusJetsSel = True
+        make_JetsPlots = True
+        make_METPlots = False
+        make_bJetsPlots = True
+        make_btagScore = True
+        make_TwoTagCountPlots = False
 
         for channel, (leptons, cat) in categories.items():
 
-            plots.extend(makePrimaryANDSecondaryVerticesPlots(cat, channel))
-            
-            # before cutting on the jets len 
-            plots.extend(makeJetmultiplictyPlots(cat, jets, channel))
-            
-            TwoLeptonsTwoJets=cat.refine("twoJet{0}Sel".format(channel), cut=[ op.rng_len(jets) ==2 ])
-            plots.extend(makeLeptonPlots(TwoLeptonsTwoJets, leptons, channel))
-            plots.extend(makeJetPlots(TwoLeptonsTwoJets, jets, channel))
-            
-            plots.extend(makeMETPlots(TwoLeptonsTwoJets, leptons, MET, corrMET, channel))
-            plots.extend(MakeEXTRAMETPlots(TwoLeptonsTwoJets, corrMET, MET, channel))
-            
-            for WP in WorkingPoints:
-                bJets_PassdeepflavourWP=safeget(bjets, "DeepFlavour", WP)
-                bJets_PassdeepcsvWP=safeget(bjets, "DeepCSV", WP)
-                
-                TwoLeptonsTwoBjets = {
-                    "DeepFlavour{0}".format(WP) :  TwoLeptonsTwoJets.refine("TwoLeptonsTwoBjets_DeepFlavour{0}_{1}".format(WP, channel),
-                                                                        cut=[ op.rng_len(bJets_PassdeepflavourWP) ==2 ]),
-                    "DeepCSV{0}".format(WP)     :  TwoLeptonsTwoJets.refine("TwoLeptonsTwoBjets_DeepCSV{0}_{1}".format(WP, channel), 
-                                                                        cut=[ op.rng_len(bJets_PassdeepcsvWP) ==2 ])
-                                            }
+            if make_PrimaryANDSecondaryVerticesPlots:
+                plots.extend(makePrimaryANDSecondaryVerticesPlots(cat, channel))
+            if make_LeptonsPlots_LepSel:
+                plots.extend(makeLeptonPlots(cat, leptons, '_2lepOSOFSel_', channel))
 
-                plots.extend(makeBJetPlots(TwoLeptonsTwoBjets, bjets, WP, channel))
-                plots.extend(makeDiscriminatorPlots(TwoLeptonsTwoBjets, bjets, WP, channel))
+            plots.extend(makeJetmultiplictyPlots(cat, jets, '_NOcutOnJetsLen_', channel))
+            
+            cutOnJetsLen = {
+                    'Only2': op.rng_len(jets) ==2,
+                    'atleast2': op.rng_len(jets) >1
+                    }
+            
+            for nbrj, jcut in cutOnJetsLen.items():
+            
+                TwoLeptonsTwoJets=cat.refine("{0}Jets{1}Sel".format( nbrj, channel), cut=[ jcut])
+                plots.extend(makeJetmultiplictyPlots(TwoLeptonsTwoJets, jets, '{0}Jets_'.format(nbrj), channel))
+           
+                if make_LeptonsPlots_LeptonPlusJetsSel:
+                    plots.extend(makeLeptonPlots(TwoLeptonsTwoJets, leptons, '_2lep{0}jeSel_'.format(nbrj), channel))
+                if make_JetsPlots:
+                    plots.extend(makeJetPlots(TwoLeptonsTwoJets, jets, nbrj, channel))
+                if make_METPlots:     
+                    plots.extend(makeMETPlots(TwoLeptonsTwoJets, leptons, MET, corrMET, nbrj, channel))
+                    plots.extend(MakeEXTRAMETPlots(TwoLeptonsTwoJets, corrMET, MET, nbrj, channel))
+            
+                for WP in WorkingPoints:
+                    bJets_PassdeepflavourWP=safeget(bjets, "DeepFlavour", WP)
+                    bJets_PassdeepcsvWP=safeget(bjets, "DeepCSV", WP)
+                    
+                    bJets_NOTPassdeepflavourWP=safeget(failings, "DeepFlavour", WP)
+                    bJets_NOTPassdeepcsvWP=safeget(failings, "DeepCSV", WP)
                 
-                # TwoTag Count Method --> start filling 2tag crossFlavour histograms
-                for key in TwoLeptonsTwoBjets.keys():
-                    tagger=key.replace(WP, "")
-                    bjets_=safeget(bjets, tagger, WP)
-                    #for iPT in range(-1,len(lowerPtBinEdges)):
-                    #    histosName = channel+"_only2_twoTags_"+ key + "_"+ ReturnPtLabel(iPT)
-                    #    plots +=TwoTagCount(channel, histosName, key, jets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBjets, iPT, ReturnPtLabel(iPT))
-                    plots +=(TwoTagCount(channel, key, jets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBjets))#, isMC))
+                    cutOnbJetsLen_PassWP = {
+                            'Only2': {
+                                'DeepFlavour':op.rng_len(bJets_PassdeepflavourWP) == 2,
+                                'DeepCSV': op.rng_len(bJets_PassdeepcsvWP) ==2
+                                },
+                            'atleast2':{ 
+                                'DeepFlavour':op.rng_len(bJets_PassdeepflavourWP) >1,
+                                'DeepCSV':op.rng_len(bJets_PassdeepcsvWP) >1
+                                }
+                            }
+                    cutOnbJetsLen_FailWP = {
+                            'Only2': {
+                                'DeepFlavour':op.rng_len(bJets_NOTPassdeepflavourWP) ==2,
+                                'DeepCSV':op.rng_len(bJets_NOTPassdeepcsvWP) ==2
+                                },
+                            'atleast2':{
+                                'DeepFlavour':op.rng_len(bJets_NOTPassdeepflavourWP) >1,
+                                'DeepCSV':op.rng_len(bJets_NOTPassdeepcsvWP) >1
+                                }
+                            }
+
+                    TwoLeptonsTwoBJets = {
+                        "DeepFlavour{0}".format(WP) :  TwoLeptonsTwoJets.refine("TwoLeptons{0}BJets_DeepFlavour{1}_{2}".format(nbrj, WP, channel),
+                                                                            cut=[ cutOnbJetsLen_PassWP[nbrj]['DeepFlavour']]),
+                        "DeepCSV{0}".format(WP)     :  TwoLeptonsTwoJets.refine("TwoLeptonsT{0}BJets_DeepCSV{1}_{2}".format(nbrj, WP, channel), 
+                                                                            cut=[ cutOnbJetsLen_PassWP[nbrj]['DeepCSV']])
+                                        }
+                    
+                    TwoLeptonsTwoFailingsBJets = {
+                        "DeepFlavour{0}".format(WP) :  TwoLeptonsTwoJets.refine("TwoLeptons{0}BJets_fail_DeepFlavour{1}_{2}".format(nbrj, WP, channel),
+                                                                            cut=[ cutOnbJetsLen_FailWP[nbrj]['DeepFlavour']]),
+                        "DeepCSV{0}".format(WP)     :  TwoLeptonsTwoJets.refine("TwoLeptons{0}BJets_fail_DeepCSV{1}_{2}".format(nbrj, WP, channel), 
+                                                                            cut=[ cutOnbJetsLen_FailWP[nbrj]['DeepCSV']])
+                                        }
+
+                    if make_bJetsPlots:
+                        plots.extend(makeBJetPlots(TwoLeptonsTwoBJets, bjets, WP, nbrj, channel))
+                    if make_btagScore:
+                        plots.extend(makeDiscriminatorPlots(TwoLeptonsTwoBJets, bjets, WP, btaggingWPs, nbrj, channel, era))
+            
+                    TwoLeptonsTwoBjets_METcut = dict((key, selNoMET.refine("TwoLeptons{0}Bjets_{1}_{2}_plusmetcut".format(nbrj, key, channel), 
+                                                            cut=[ corrMET.pt < 80. ])) for key, selNoMET in TwoLeptonsTwoBJets.items()) 
+                    TwoLeptonsTwoBjets_Inverted_METcut = dict((key, selNoMET.refine("TwoLeptons{0}Bjets_{1}_{2}_highMETtail".format(nbrj, key, channel), 
+                                                                    cut=[ corrMET.pt > 80. ])) for key, selNoMET in TwoLeptonsTwoBJets.items()) 
+                    if make_TwoTagCountPlots:
+                        for sel, metcut in zip ([TwoLeptonsTwoBjets_METcut, TwoLeptonsTwoBjets_Inverted_METcut] , [ 'METcut', 'HighMET']):
+                            makehistosforTTbarEstimation(sel, leptons, bjets, WP, metcut, nbrj, channel) 
+                
+                            # TwoTag Count Method --> start filling 2tag crossFlavour histograms
+                            for key in TwoLeptonsTwoBJets.keys():
+                                tagger=key.replace(WP, "")
+                                bjets_=safeget(bjets, tagger, WP)
+                                failings_=safeget(failings, tagger, WP)
+                    
+                                plots +=(TwoTagCount(channel, key, cat, jets, bjets, failings_, TwoLeptonsTwoFailingBJets, bjets_, TwoLeptonsTwoJets, TwoLeptonsTwoBJets, WP, nbrj, isMC))
 
         return plots
+
+    def postProcess(self, taskList, config=None, workdir=None, resultsdir=None):
+        # run plotIt as defined in HistogramsModule - this will also ensure that self.plotList is present
+        super(TTbarDileptonMeasurment, self).postProcess(taskList, config, workdir, resultsdir)
+
+        from bamboo.plots import CutFlowReport, DerivedPlot
+        import bambooToOls
+
+        plotList_2D = [ ap for ap in self.plotList if ( isinstance(ap, Plot) or isinstance(ap, DerivedPlot) ) and len(ap.binnings) == 2 ]
+        logger.debug("Found {0:d} plots to save".format(len(plotList_2D)))
+
+        from bamboo.analysisutils import loadPlotIt
+        p_config, samples, plots_2D, systematics, legend = loadPlotIt(config, plotList_2D, eras=self.args.eras, workdir=workdir, resultsdir=resultsdir, readCounters=self.readCounters, vetoFileAttributes=self.__class__.CustomSampleAttributes, plotDefaults=self.plotDefaults)
+        from plotit.plotit import Stack
+        from bamboo.root import gbl
+        for plot in plots_2D:
+            logger.debug(f"Saving plot {plot.name}")
+            obsStack = Stack(smp.getHist(plot) for smp in samples if smp.cfg.type == "DATA")
+            expStack = Stack(smp.getHist(plot) for smp in samples if smp.cfg.type == "MC")
+            cv = gbl.TCanvas(f"c{plot.name}")
+            cv.Divide(2)
+            cv.cd(1)
+            expStack.obj.Draw("COLZ0")
+            cv.cd(2)
+            obsStack.obj.Draw("COLZ0")
+            cv.Update()
+            cv.SaveAs(os.path.join(resultsdir, f"{plot.name}.png"))
+
+
+
