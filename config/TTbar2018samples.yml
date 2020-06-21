@@ -319,6 +319,8 @@ plotIt:
       # on single lepton trigger 
       #- ele_trigger
       #- muon_trigger
+      # on pu
+      - puweights2018_Autumn18
       # on the cross section : 1+xsec_uncert(pb)/xsec(pb)
       #-TTToSemiLeptonicxsc: {type: const, value: , on: 'TTToSemiLeptonic'}
       #-TTToFullLeptonicxsc: {type: const, value: , on: 'TTToFullLeptonic'}

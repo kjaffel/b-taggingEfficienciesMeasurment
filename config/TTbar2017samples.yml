@@ -12,7 +12,7 @@ samples:
     cross-section: 15810   #pb    # total uncertainty= 5.764  pb 
     group: DY
     era: '2017'
-    pufile: 'DYJetsToLL_M-10to50_2017.json'
+    pufile: 'DYJetsToLL_M-10to50-madgraphMLM_2017.json'
     split: 4
 
   DYJetsToLL_M-50-madgraphMLM:
@@ -124,6 +124,7 @@ samples:
     generated-events: 'genEventSumw'
     cross-section: 27.6 # +- 0.04 pb
     group: WZ
+    pufile: 'WZ_2017.json'
     era: '2017'
     split: 4
 
@@ -134,6 +135,7 @@ samples:
     cross-section: 12.14 # +- 0.01964 pb
     group: ZZ
     era: '2017'
+    pufile: 'ZZ_2017.json'
     split: 4
 
   W2JetsToLNu: # TODO PHEDEX request : /W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17NanoAODv5-PU2017_12Apr2018_Nano1June2019_newPU_102X_mc2017_realistic_v7-v1/NANOAODSIM
@@ -399,8 +401,10 @@ plotIt:
     # the default pu 
     - puweights2017_Fall17
       # on the samples with wrong PU profile
-    - puWeight_DYJetsToLL_M_10to50
+    - puWeight_DYJetsToLL_M-10to50-madgraphMLM
     - puWeight_ST_tW_antitop_5f
+    - puWeight_ZZ
+    - puWeight_WZ
     # on the trigger
     - eleltrig
     - mumutrig
@@ -414,6 +418,8 @@ plotIt:
     - psFSR
     # L1 pre-firing event correction weight
     - L1PreFiring 
+    # ZVTX
+    - HLTZvtxSF
     # on the cross section
     # --- ttbar 
     - TTToHadronicxsc: {type: const, value: 1.0007530199388735263 , on: 'TTToHadronic'} # uncer= 0.5174 pb    ---> ok 
