@@ -21,6 +21,8 @@ if btagPath not in sys.path:
 
 from ControlPlots import *
 from utils import *
+import bamboo.scalefactors
+
 binningVariables = {
       "Eta"       : lambda obj : obj.eta
     , "ClusEta"   : lambda obj : obj.eta + obj.deltaEtaSC
@@ -29,98 +31,58 @@ binningVariables = {
     , "Pt"        : lambda obj : obj.pt
     }
 
-def localizeSF(aPath, era="2018"):
+def localizeSF(aPath, era):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors", era, aPath)
 
-def localize_trigger(aPath):
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "TriggerEfficienciesStudies", aPath)
+def localize_trigger(aPath, era):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "TriggerEfficienciesStudies", era, aPath)
 
 def localize_PileupJetID(aPath):
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors/run2PileupJetID", aPath)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ScaleFactors/run2PileupJetID", aPath)
+
+def localize_HHMoriond17Trigger(aPath):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "TriggerEfficienciesStudies", aPath)
 
 myScaleFactors = {
+    "2017": {
+            "electron_ID": {"cut_medium": localizeSF("Electron_EGamma_SF2D_2017_Medium_Fall17V2.json", "2017")},
+            "electron_reco": localizeSF("Electron_EGamma_SF2D_RECO_2017RunBCDEF_ptG20_fromPOG.json", "2017"),
+            "electron_trigger": localizeSF("Electron_ele28_ht150_OR_ele32.json", "2017"),
+            "muon_ID": {"cut_medium": localizeSF("Muon_NUM_MediumID_DEN_genTracks_pt_abseta_{uncer}_2017RunBCDEF.json".format(uncer=uncer), "2017") for uncer in ("syst", "stat")},
+            "muon_iso":{"iso_tight_id_medium": localizeSF("Muon_NUM_TightRelIso_DEN_MediumID_pt_abseta_{uncer}_2017RunBCDEF.json".format(uncer=uncer), "2017") for uncer in ("syst", "stat")},
+            "muon_trigger": localizeSF("Muon_IsoMu27_RunBtoF.json", "2017"),
+            },
     "2018": {
             #***********  leptons ID , ISO , Scales Factors **************************
             "electron_ID": {"cut_medium": localizeSF("Electron_EGamma_SF2D_2018_Medium_Fall17V2.json", "2018")},
-            "electron_reco": localizeSF("Electron_EGamma_SF2D_Reco.json", "2018"),
+            "electron_reco": localizeSF("Electron_EGamma_SF2D_RECO_2018_fromPOG.json", "2018"),
+            "electron_trigger": localize_trigger("Electron_ele28_ht150_OR_ele32.json", "2018"),
             "muon_ID": {"cut_medium": localizeSF("Muon_NUM_MediumID_DEN_TrackerMuons_pt_abseta_{uncer}_2018RunABCD.json".format(uncer=uncer), "2018") for uncer in ("syst", "stat")},
             "muon_iso":{"iso_tight_id_medium": localizeSF("Muon_NUM_TightRelIso_DEN_MediumID_pt_abseta_{uncer}_2018RunABCD.json".format(uncer=uncer), "2018") for uncer in ("syst", "stat")},
-            },
-            #************ Trigger Scales Factors **********************************
-            # single leptons trigger  
-            "electron_trigger": localize_trigger("Electron_ele28_ht150_OR_ele32_etaCut.json"),
-            #"electron_trigger": localize_trigger("Electron_ele28_ht150_OR_ele32.json", "2018"),
-            "muon_trigger" :tuple(localize_trigger("{trig}_PtEtaBins_2018AfterMuonHLTUpdate.json".format(trig=trig))
+            "muon_trigger" :tuple(localize_trigger("{trig}_PtEtaBins_2018AfterMuonHLTUpdate.json".format(trig=trig),"2018")
                              for trig in ("IsoMu24_OR_IsoTkMu24","Mu50_OR_OldMu100_OR_TkMu100" )),
-            #"muon_trigger": [(["Run315264to316360"], localize_trigger("Muon_IsoMu24_BeforeMuonHLTUpdate.json")),
-                             #(["Run316361to325175"], localize_trigger("Muon_IsoMu24_AfterMuonHLTUpdate.json"))],
-            # FIXME these are old versions should be updated ! can be passed to all eras
+            },
             # double leptons trigger 
-            "mueleLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp)) 
-                                          for wp in ("Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
-            "elemuLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp)) 
-                                          for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg")),
-            "doubleEleLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp))
-                                                for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
-            "doubleMuLeg_HHMoriond17_2016" : tuple(localize_trigger("{wp}.json".format(wp=wp))
-                                                for wp in ("Muon_DoubleIsoMu17Mu8_IsoMu17leg", "Muon_DoubleIsoMu17TkMu8_IsoMu8legORTkMu8leg", "Muon_DoubleIsoMu17Mu8_IsoMu17leg", "Muon_DoubleIsoMu17TkMu8_IsoMu8legORTkMu8leg")),
-            
-            "JetId_InHighPileup_2018_102X" : tuple(localize_PileupJetID("puID_SFs_2018{0}.json".format(wp))
-                                            for wp in ("L", "M", "T")),
+            "mueleLeg_HHMoriond17_2016" : tuple(localize_HHMoriond17Trigger("{wp}.json".format(wp=wp)) 
+                                                for wp in ("Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg", "Electron_IsoEle23Leg", "Electron_IsoEle12Leg")),
+            "elemuLeg_HHMoriond17_2016" : tuple(localize_HHMoriond17Trigger("{wp}.json".format(wp=wp)) 
+                                                for wp in ("Electron_IsoEle23Leg", "Electron_IsoEle12Leg", "Muon_XPathIsoMu23leg", "Muon_XPathIsoMu8leg")),
         }
 
-    # fill in some defaults: myScalefactors and bamboo.scalefactors.binningVariables_nano
-def getScaleFactor(objType, key, periods=None, combine=None, isElectron=False, systName=None):
-    return scalefactors.get_scalefactor(objType, key, combine=combine,
-                                        sfLib=myScaleFactors, paramDefs=scalefactors.binningVariables_nano,
-                                        isElectron=isElectron, systName=systName)
+def getScaleFactor(objType, key, periods=None, combine=None, additionalVariables=dict(), getFlavour=None, isElectron=False, systName=None):
+    return bamboo.scalefactors.get_scalefactor(objType, key, periods=periods, combine=combine,
+                                        additionalVariables=additionalVariables,
+                                        sfLib=myScaleFactors,
+                                        paramDefs=bamboo.scalefactors.binningVariables_nano,
+                                        getFlavour=getFlavour,
+                                        isElectron=isElectron,
+                                        systName=systName)
 
-def METFilter(flags, era, isMC):
-    # from https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
-    if era == '2018':
-        cuts = [
-                flags.goodVertices,
-                flags.globalSuperTightHalo2016Filter, # not tested need to be careful
-                flags.HBHENoiseFilter,
-                flags.HBHENoiseIsoFilter,
-                flags.EcalDeadCellTriggerPrimitiveFilter,
-                flags.BadPFMuonFilter,
-                flags.ecalBadCalibFilterV2 ]
-    if not isMC:
-        cuts.append(flags.eeBadScFilter)
-
-    return cuts
-
-class METcorrection(object):
-    # https://lathomas.web.cern.ch/lathomas/METStuff/XYCorrections/XYMETCorrection.h
-    def __init__(self,rawMET,pv,sample,era,isMC):
-        if era == "2018":
-            if isMC:
-                xcorr = (-0.296713,  0.141506)
-                ycorr = (-0.115685, -0.0128193)
-            else:
-                if '2018A' in sample:
-                    xcorr= (-0.362865,  1.94505)
-                    ycorr= (-0.0709085, 0.307365)
-                elif'2018B' in sample:
-                    xcorr = (-0.492083, 2.93552)
-                    ycorr = (-0.17874,  0.786844)
-                elif '2018C' in sample:
-                    xcorr = (-0.521349, 1.44544)
-                    ycorr = (-0.118956, 1.96434)
-                else:
-                    xcorr = (-0.531151,  1.37568)
-                    ycorr = (-0.0884639, 1.57089)
-            
-            METxcorr=xcorr[0] *pv.npvs+xcorr[1]
-            METycorr=ycorr[0] *pv.npvs+ycorr[1]
-            
-            corrMETx=rawMET.pt*op.cos(rawMET.phi) +METxcorr
-            corrMETy=rawMET.pt*op.sin(rawMET.phi) +METycorr
-                
-            self.pt=op.sqrt(corrMETx**2 +corrMETy**2)
-            atan=op.atan(corrMETy/corrMETx)
-            self.phi=op.multiSwitch((corrMETx> 0,atan),(corrMETy> 0,atan+math.pi),atan-math.pi)
+def getL1PreFiringWeight(tree):
+    return op.systematic(tree.L1PreFiringWeight_Nom,
+                        name="L1PreFiring",
+                        up=tree.L1PreFiringWeight_Up,
+                        down=tree.L1PreFiringWeight_Dn)
 
 lowerPtBinEdges=[30,50,70,100,140,200,300, 600]
 def ReturnPtLabel(iPT):
@@ -264,7 +226,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
     """
     This class is for b-tagging efficiencies measurments with a tag counting method in ttbar dilepton 
     events at 13TeV 
-    samples are for 2018 data in NanoAODv5 format 
+    samples are for 2018 && 2017 data in NanoAODv5 format 
 
     """
     def __init__(self, args):
@@ -351,6 +313,49 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 elif "2018D" in sample:
                     jec="Autumn18_RunD_V8_DATA"
 
+        elif era == "2017":
+            
+            configureRochesterCorrection(tree._Muon, os.path.join(os.path.dirname(__file__), "data", "RoccoR2017.txt"), isMC=isMC, backend=be, uName=sample)
+            
+            # https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2017
+            triggersPerPrimaryDataset = {
+                "MuonEG"     : [ tree.HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ,
+                                 tree.HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ,
+                                 tree.HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ ],
+                
+                "SingleElectron": [ tree.HLT.Ele35_WPTight_Gsf,
+                                    tree.HLT.Ele28_eta2p1_WPTight_Gsf_HT150 ],
+                "SingleMuon" :    [ tree.HLT.IsoMu27,
+                                    tree.HLT.Mu50   ],
+
+                
+            }
+            
+            if "2017B" not in sample:
+             ## all are removed for 2017 era B
+                triggersPerPrimaryDataset["MuonEG"] += [ 
+                        tree.HLT.Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,
+                        tree.HLT.Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL,
+                        tree.HLT.Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL ]
+
+            if self.isMC(sample):
+                jec="Fall17_17Nov2017_V32_MC"
+                smear="Fall17_V3_MC"
+                jesUncertaintySources=["Total"]
+
+            else:
+                if "2017B" in sample:
+                    jec="Fall17_17Nov2017B_V32_DATA"
+
+                elif "2017C" in sample:
+                    jec="Fall17_17Nov2017C_V32_DATA"
+
+                elif "2017D" in sample or "2017E" in sample:
+                    jec="Fall17_17Nov2017DE_V32_DATA"
+                
+                elif "2017F" in sample:
+                    jec="Fall17_17Nov2017F_V32_DATA"
+
         try:
             configureJets(tree._Jet, "AK4PFchs", jec=jec, smear=smear, jesUncertaintySources=jesUncertaintySources, mayWriteCache=isNotWorker, isMC=isMC, backend=be, uName=sample)
         except Exception as ex:
@@ -380,19 +385,36 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         from bambooToOls import Plot
         from bamboo.plots import SummedPlot
         from bamboo import treefunctions as op
+        from METFilter_xyCorr import METFilter, METcorrection
+        from bamboo.analysisutils import makePileupWeight
 
         isMC = self.isMC(sample)
         era = sampleCfg.get("era") if sampleCfg else None
         noSel = noSel.refine("passMETFlags", cut=METFilter(t.Flag, era, isMC) )
         puWeightsFile = None
+        mcprofile= None
         
         if era == "2018":
-            puWeightsFile = os.path.join(os.path.dirname(__file__), "data", "puweights2018_Autumn18.json")
-        
-        if self.isMC(sample) and puWeightsFile is not None:
-            from bamboo.analysisutils import makePileupWeight
-            noSel = noSel.refine("puWeight", weight=makePileupWeight(puWeightsFile, t.Pileup_nTrueInt, systName="pileup"))
-        
+            suffix= '2018_Autumn18'
+            puWeightsFile = os.path.join(os.path.dirname(__file__), "data/PileupFullRunII/", "puweights2018_Autumn18.json")
+        elif era == "2017":
+            suffix ='2017_Fall17'
+            if sample in ['DYJetsToLL_M-10to50-madgraphMLM', 'ST_tW_antitop_5f', 'WZ', 'ZZ']: 
+                if "pufile" not in sampleCfg:
+                    raise KeyError("Could not find 'pufile' entry for sample %s in the YAML file"%sampleCfg["sample"])
+                mcprofile= os.path.join(os.path.dirname(__file__), "data/PileupFullRunII/mcprofile/", "%s_2017.json"%sample)
+            else:
+                puWeightsFile = os.path.join(os.path.dirname(__file__), "data/PileupFullRunII/", "puweights2017_Fall17.json")
+
+
+        if self.isMC(sample):
+            if mcprofile is not None:
+                PUWeight = makePileupWeight(mcprofile, t.Pileup_nTrueInt, variation="Nominal",
+                                                   nameHint="puWeight_{0}".format(sample.replace('-','_')))
+            else:
+                PUWeight = makePileupWeight(puWeightsFile, t.Pileup_nTrueInt, systName="puweights%s"%suffix)
+            noSel = noSel.refine("puWeight", weight=PUWeight)
+
         plots = []
         forceDefine(t._Muon.calcProd, noSel)
 
@@ -401,9 +423,9 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                      
         muonIDSF = getScaleFactor("lepton", (era, "muon_ID", "cut_medium"), systName="muon_ID")
         muonIsoSF = getScaleFactor("lepton", (era, "muon_iso", "iso_tight_id_medium"), systName="muon_iso")
-        # single muon trigger
-        # FIXME
-        #muonTriggerSF = getScaleFactor("lepton", (era, "muon_trigger"), systName="muon_trigger")
+        #     if combPrefix == "":
+        #UnboundLocalError: local variable 'combPrefix' referenced before assignment
+        #FIXME muonTriggerSF = getScaleFactor("lepton", (era, "muon_trigger"), systName="muon_trigger")
 
         sorted_electrons = op.sort(t.Electron, lambda ele : -ele.pt)
         electrons = op.select(sorted_electrons, lambda ele : op.AND(ele.pt > 15., op.abs(ele.eta) < 2.5 , ele.cutBased>=3, op.abs(ele.sip3d) < 4., 
@@ -412,8 +434,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         
         eleIDSF = getScaleFactor("lepton", (era, "electron_ID", "cut_medium"), isElectron=True, systName="ele_ID")
         eleRecoSF = getScaleFactor("lepton", (era, "electron_reco"), isElectron=True, systName="ele_reco")
-        # single electron trigger 
-        #eleTriggerSF = getScaleFactor("lepton", (era, "electron_trigger"), isElectron=True, systName="ele_trigger")
+        #FIXME eleTriggerSF = getScaleFactor("lepton", (era, "electron_trigger"), isElectron=True, systName="ele_trigger")
 
         sorted_jets=op.sort(t.Jet, lambda j : -j.pt)
         jetsSel = op.select(sorted_jets, lambda j : op.AND(j.pt > 30., op.abs(j.eta)< 2.5, j.jetId &4))
@@ -431,11 +452,11 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         btaggingWPs = {
                 "DeepCSV":{ # era: (loose, medium, tight)
                             #"2016": (0.2217, 0.6321, 0.8953), 
-                            #"2017":(0.1522, 0.4941, 0.8001), 
+                            "2017":(0.1522, 0.4941, 0.8001), 
                             "2018":(0.1241, 0.4184, 0.7527) },
                 "DeepFlavour":{
                             #"2016":(0.0614, 0.3093, 0.7221), 
-                            #"2017":(0.0521, 0.3033, 0.7489), 
+                            "2017":(0.0521, 0.3033, 0.7489), 
                             "2018": (0.0494, 0.2770, 0.7264) }
                 }
         
@@ -484,6 +505,13 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         MET = t.MET if era != "2017" else t.METFixEE2017
         corrMET=METcorrection(MET,t.PV,sample,era,self.isMC(sample))
         
+        L1Prefiring = 1.
+        HLTZvtxSF = 1.
+        if era in ["2016", "2017"]:
+            L1Prefiring = getL1PreFiringWeight(t)
+        if era =='2017':
+            HLTZvtxSF = op.systematic(op.c_float(0.991), name='HLT_Zvtx_eff', up=op.c_float(0.992), down=op.c_float(0.990)) 
+        
         #The contribution from Z + jets events is reduced by applying a veto around the Z boson mass when the two leptons have the same flavour, ( | Mll -MZ | > 10 GeV).
         osdilep = lambda l1,l2 : op.AND(l1.charge != l2.charge, op.invariant_mass(l1.p4, l2.p4) >12. )
         Zboson_Vetocut = lambda l1, l2 : op.AND(l1.charge != l2.charge, op.abs(op.invariant_mass(l1.p4, l2.p4) - 90.) > 10. )
@@ -499,12 +527,12 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
         
         elemuTrigSF = getScaleFactor("dilepton", ("elemuLeg_HHMoriond17_2016"), systName="elmutrig")
         mueleTrigSF = getScaleFactor("dilepton", ("mueleLeg_HHMoriond17_2016"), systName="mueltrig")
-        doubleMuTrigSF = getScaleFactor("dilepton", ("doubleMuLeg_HHMoriond17_2016"), systName="mumutrig")
-        doubleEleTrigSF = getScaleFactor("dilepton", ("doubleEleLeg_HHMoriond17_2016"), systName="eleltrig")
+        #doubleMuTrigSF = getScaleFactor("dilepton", ("doubleMuLeg_HHMoriond17_2016"), systName="mumutrig")
+        #doubleEleTrigSF = getScaleFactor("dilepton", ("doubleEleLeg_HHMoriond17_2016"), systName="eleltrig")
 
         osllSFs = {
-                "elmu" : (lambda lep :  [ muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), elemuTrigSF(lep)]),#, eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
-                "muel" : (lambda lep :  [ muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), mueleTrigSF(lep)])#,  eleTriggerSF(lep[1]), muonTriggerSF(lep[0])])
+                "elmu" : (lambda lep :  [ HLTZvtxSF, L1Prefiring, muonIDSF(lep[1]), muonIsoSF(lep[1]) , eleRecoSF(lep[0]), eleIDSF(lep[0]), elemuTrigSF(lep)]),#, eleTriggerSF(lep[0]), muonTriggerSF(lep[1]) ]),
+                "muel" : (lambda lep :  [ HLTZvtxSF, L1Prefiring, muonIDSF(lep[0]), muonIsoSF(lep[0]) , eleRecoSF(lep[1]), eleIDSF(lep[1]), mueleTrigSF(lep)])#,  eleTriggerSF(lep[1]), muonTriggerSF(lep[0])])
                 
                 #"mumu" : (lambda ll : [ muonIDSF(ll[0]), muonIDSF(ll[1]), muonIsoSF(ll[0]), muonIsoSF(ll[1]), doubleMuTrigSF(ll)]),
                 #"elel" : (lambda ll : [ eleIDSF(ll[0]), eleIDSF(ll[1]), eleRecoSF(ll[0]), eleRecoSF(ll[1]), doubleEleTrigSF(ll)])
@@ -522,12 +550,12 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                             )) for channel, leadpair in osll.items())
 
         make_PrimaryANDSecondaryVerticesPlots = False
-        make_LeptonsPlots_LepSel = False
-        make_LeptonsPlots_LeptonPlusJetsSel = False
-        make_JetsPlots = False
+        make_LeptonsPlots_LepSel = True
+        make_LeptonsPlots_LeptonPlusJetsSel = True
+        make_JetsPlots = True
         make_METPlots = False
-        make_bJetsPlots = False
-        make_btagScore = False
+        make_bJetsPlots = True
+        make_btagScore = True
         make_TwoTagCountPlots = True
         make_ttbarEstimationPlots =True
 
@@ -541,7 +569,7 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
             plots.extend(makeJetmultiplictyPlots(cat, jets, '_NOcutOnJetsLen_', channel))
             
             cutOnJetsLen = {
-                    'Only2': op.rng_len(jets) ==2,
+                    #'Only2': op.rng_len(jets) ==2,
                     'atleast2': op.rng_len(jets) >1
                     }
             
