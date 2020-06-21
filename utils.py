@@ -22,13 +22,15 @@ def safeget(dct, *keys):
 def getOpts(name, **kwargs):
     uname=name.lower()
     if "elmu" in uname:
-        label = "emu channel"
+        label = "e^{+}#mu^{-}"+"channel"
     elif "muel" in uname:
-        label = "mue channel"
+        label = "#mu^{+}e^{-}"+ "channel"
     elif "elel" in uname:
-        label = "ee channel"
+        label = "e^{+}e^{-}"+"channel"
     elif "mumu" in uname:
-        label = "mumu channel"
+        label = "#mu^{+}#mu^{-}"+"channel"
+    elif "comb" in uname:
+        label = "e^{#pm}#mu^{#pm}"+" combined"
     elif "lept" in uname:
         label = "1 lepton pair (e/#mu)"
     if "2j" in uname:
