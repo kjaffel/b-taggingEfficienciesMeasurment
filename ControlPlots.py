@@ -20,13 +20,13 @@ def makeJetPlots(sel, jets, suffix, uname):
     for i in range(maxJet):
         plots.append(Plot.make1D(f"{uname}_{suffix}_jet{i+1}_pt", jets[i].pt, sel,
                     EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), title=f"{utils.getCounter(i+1)} jet p_{{T}} (GeV)",
-                    plotopts=utils.getOpts(uname, **{"log-y": True})))
+                    plotopts=utils.getOpts(uname, **{"log-y": False})))
         plots.append(Plot.make1D(f"{uname}_{suffix}_jet{i+1}_eta", jets[i].eta, sel,
                     EqBin(50 // binScaling, -2.4, 2.4), title=f"{utils.getCounter(i+1)} jet eta",
-                    plotopts=utils.getOpts(uname, **{"log-y": True})))
+                    plotopts=utils.getOpts(uname, **{"log-y": False})))
         plots.append(Plot.make1D(f"{uname}_{suffix}_jet{i+1}_phi", jets[i].phi, sel,
                     EqBin(50 // binScaling, -3.1416, 3.1416), title=f"{utils.getCounter(i+1)} jet #phi", 
-                    plotopts=utils.getOpts(uname, **{"log-y": True})))
+                    plotopts=utils.getOpts(uname, **{"log-y": False})))
 
     return plots
     
@@ -43,21 +43,21 @@ def makeBJetPlots(sel, bjets, wp, suffix, uname):
                         safeget(sel, key), 
                         EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), 
                         title=f"{utils.getCounter(i+1)} bJet pT [GeV]", 
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
                 
             plots.append(Plot.make1D(f"{uname}_{suffix}_bJet{i+1}_eta_{key}".format(key=key), 
                         bjets_[i].eta,
                         safeget(sel, key), 
                         EqBin(50 // binScaling, -2.4, 2.4), 
                         title=f"{utils.getCounter(i+1)} bJet eta", 
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
             
             plots.append(Plot.make1D(f"{uname}_{suffix}_bJet{i+1}_phi_{key}".format(key=key), 
                         bjets_[i].phi, 
                         safeget(sel, key),
                         EqBin(50 // binScaling, -3.1416, 3.1416), 
                         title=f"{utils.getCounter(i+1)} bJet phi", 
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
     return plots
 
 def makeDiscriminatorPlots(sel, bjets, wp, btaggingWPs, suffix, uname, era):
@@ -97,13 +97,13 @@ def makeLeptonPlots(sel, leptons, suffix, uname):
         leptonptCut = (25. if i == 0 else( 10. if uname[-1]=='u' else( 15. if uname[-1]=='l' else(0.))))
         plots.append(Plot.make1D(f"{uname}_%s_lep{i+1}_pt"%suffix, leptons[i].pt, sel,
                         EqBin(60 // binScaling, leptonptCut, 530.), title="%s p_{T} [GeV]" % flav,
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
         plots.append(Plot.make1D(f"{uname}_%s_lep{i+1}_eta"%suffix, leptons[i].eta, sel,
                         EqBin(50 // binScaling, -2.4, 2.4), title="%s eta" % flav,
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
         plots.append(Plot.make1D(f"{uname}_%s_lep{i+1}_phi"%suffix, leptons[i].phi, sel,
                         EqBin(50 // binScaling, -3.1416, 3.1416), title="%s #phi" % flav,
-                        plotopts=utils.getOpts(uname, **{"log-y": True})))
+                        plotopts=utils.getOpts(uname, **{"log-y": False})))
     return plots
         
 def makeJetmultiplictyPlots(sel, jets, suffix, uname):
@@ -150,10 +150,10 @@ def makeMETPlots(sel, leptons, met, corrMET, uname):
 
     plots.append(Plot.make1D(f"{uname}_MET_pt", met.pt, sel,
                 EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                plotopts=utils.getOpts(uname, **{"log-y": True})))
+                plotopts=utils.getOpts(uname, **{"log-y": False})))
     plots.append(Plot.make1D(f"{uname}_MET_phi", met.phi, sel,
                 EqBin(60 // binScaling, -3.1416, 3.1416), title="MET #phi",
-                plotopts=utils.getOpts(uname, **{"log-y": True})))
+                plotopts=utils.getOpts(uname, **{"log-y": False})))
     for i in range(2):
         plots.append(Plot.make1D(f"{uname}_MET_lep{i+1}_deltaPhi",
                 op.Phi_mpi_pi(leptons[i].phi - met.phi), sel, EqBin(60 // binScaling, -3.1416, 3.1416),
@@ -162,7 +162,7 @@ def makeMETPlots(sel, leptons, met, corrMET, uname):
         MT = op.sqrt( 2. * met.pt * leptons[i].p4.Pt() * (1. - op.cos(op.Phi_mpi_pi(met.phi - leptons[i].p4.Phi()))) )
         plots.append(Plot.make1D(f"{uname}_MET_MT_lep{i+1}", MT, sel,
                 EqBin(60 // binScaling, 0., 600.), title="Lepton M_{T} [GeV]",
-                plotopts=utils.getOpts(uname, **{"log-y": True})))
+                plotopts=utils.getOpts(uname, **{"log-y": False})))
 
     return plots
 
@@ -174,12 +174,12 @@ def MakeEXTRAMETPlots(sel, corrmet, met, suffix, uname):
     plots.append(Plot.make1D(f"{uname}_{suffix}_met_pT",
                 met.pt, sel, 
                 EqBin(60 // binScaling, 0., 600.), title="MET p_{T} [GeV]",
-                plotopts=utils.getOpts(uname, **{"log-y": True})))
+                plotopts=utils.getOpts(uname, **{"log-y": False})))
                         
     plots.append(Plot.make1D(f"{uname}_{suffix}_xycorrmet_pT",
                 corrmet.pt, sel,
                 EqBin(60 // binScaling, 0., 600.), title="corrMET p_{T} [GeV]",
-                plotopts=utils.getOpts(uname, **{"log-y": True})))
+                plotopts=utils.getOpts(uname, **{"log-y": False})))
 
     return plots
 
