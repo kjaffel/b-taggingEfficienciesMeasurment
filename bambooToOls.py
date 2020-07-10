@@ -45,7 +45,7 @@ def SaveCutFlowReports(config, reportList, resultsdir=".", readCounters=lambda f
             sumTotal = entry.parent.nominal.GetBinContent(1)
             if sumTotal != 0.:
                 effMsg = f", Eff={sumPass/sumTotal:.2%}"
-        printFun(f"Selection {entry.name}: N={entry.nominal.GetEntries()}, SumW={entry.nominal.GetBinContent(1)}{effMsg}")
+        #printFun(f"Selection {entry.name}: N={entry.nominal.GetEntries()}, SumW={entry.nominal.GetBinContent(1)}{effMsg}")
         f.write((f"- Selection {entry.name}: N={entry.nominal.GetEntries()}, SumW={entry.nominal.GetBinContent(1)}{effMsg}\n"))
         
         

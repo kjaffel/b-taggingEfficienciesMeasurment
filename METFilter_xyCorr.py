@@ -1,7 +1,7 @@
 import math 
 from bamboo import treefunctions as op
 
-def METFilter(flags, era, isMC):
+def METFilter(flags, era, isMC, sample):
     # from https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
     # On data and mc
     cuts=[
@@ -11,10 +11,10 @@ def METFilter(flags, era, isMC):
             flags.HBHENoiseIsoFilter,
             flags.EcalDeadCellTriggerPrimitiveFilter,
             flags.BadPFMuonFilter ]
-    if era == '2017' or era =='2018':
+    if era == '2017' and '_UL17' not in sample or era =='2018':
         cuts.append(flags.ecalBadCalibFilterV2)
-    #if not isMC:
-    #    cuts.append(flags.eeBadScFilter)
+    if not isMC:
+        cuts.append(flags.eeBadScFilter)
 
     return cuts
 

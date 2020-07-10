@@ -97,9 +97,10 @@ def makeMergedPlots(categDef, newCat, name, binning, var=None, **kwargs):
 
 #### Common tasks (systematics, sample splittings...)
 
-def addTheorySystematics(plotter, tree, noSel, MEscale=False, PSISR=True, PSFSR=True):
-    if MEscale: # produceResults in bambooToOls is doing the jobs now, much more faster than have it in postProcess
-        plotter.qcdScaleVariations = { f"qcdScalevar{i}": tree.LHEScaleWeight[i] for i in [0, 1, 3, 5, 7, 8] }
+def addTheorySystematics(plotter, tree, noSel, qcdScale=False, PSISR=False, PSFSR=False):
+    plotter.qcdScaleVariations = dict()
+    if qcdScale:
+        qcdScaleVariations = { f"qcdScalevar{i}": tree.LHEScaleWeight[i] for i in [0, 1, 3, 5, 7, 8] }
         qcdScaleSyst = op.systematic(op.c_float(1.), name="qcdScale", **plotter.qcdScaleVariations)
         noSel = noSel.refine("qcdScale", weight=qcdScaleSyst)
 
@@ -125,8 +126,30 @@ def splitTTjetFlavours(cfg, tree, noSel):
         noSel = noSel.refine(subProc, cut=(tree.genTtbarId % 100) < 41)
     return noSel
 
-# FIXME also merge systematic variations
 def normalizeAndMergeSamples(plots, counterReader, config, inDir, outPath):
+    for proc, smpCfg in config["samples"].items():
+        if smpCfg.get("group") == "data":
+            pass 
+        else:
+            resultsFile = HT.openFileAndGet(os.path.join(inDir, f"{proc}.root"), mode="READ")
+            normalizedFile = HT.openFileAndGet(os.path.join(outPath, f"{proc}.root"), "recreate")
+            lumi = config["eras"][smpCfg["era"]]["luminosity"]
+            smpScale = (smpCfg["cross-section"]* lumi) / counterReader(resultsFile)[smpCfg["generated-events"]]
+            for plot in plots:
+                
+                hNom = resultsFile.Get(plot.name)
+                hNom.Scale(smpScale)
+                hNom.Write()
+
+                prefix = f"{plot.name}__"
+                for hk in resultsFile.GetListOfKeys():
+                    if hk.GetName().startswith(prefix):
+                        hv = resultsFile.Get(hk.GetName())
+                        hv.Scale(smpScale)
+                        hv.Write()
+            normalizedFile.Write()
+
+def normalizeAndMergeSamplesOldversion(plots, counterReader, config, inDir, outPath):
     toMerge = {}
     for plot in plots:
         toMerge[plot.name] = []
