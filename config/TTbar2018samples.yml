@@ -70,16 +70,16 @@ samples:
     split: 8
   
 
-  #DYJetsToLL_M-50-amcatnloFXFX:
-  #    #db: das:[/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM, /DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM]
-  #  db: das:/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM
-  #  files: dascache/bTaggingEff/DYJetsToLL_M-50-amcatnloFXFX_ext2_2018.dat
-  #  generated-events: 'genEventSumw'
-  #  cross-section: 6529.0  # +- 28.29 pb 
-  #  group: DY
-  #  era: '2018'
-  #  split: 4
-  #  
+  DYJetsToLL_M-50-amcatnloFXFX:
+    #db: das:[/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM, /DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM]
+    db: das:/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext2-v1/NANOAODSIM
+    files: dascache/bTaggingEff/DYJetsToLL_M-50-amcatnloFXFX_ext2_2018.dat
+    generated-events: 'genEventSumw'
+    cross-section: 6529.0  # +- 28.29 pb 
+    group: DY
+    era: '2018'
+    split: 4
+    
   WW:
     db: das:/WW_TuneCP5_13TeV-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19-v1/NANOAODSIM      
     files: dascache/bTaggingEff/WW_2018.dat
@@ -309,34 +309,40 @@ plotIt:
       ratio-y-axis-range: [0.6,1.4]
       sort-by-yields: False
   systematics:
-      # on the jets
+        # on the jets
       - jer
       - jesTotal
-      # sys from theory  
+        # sys from theory  
       - qcdScale
       - psISR
       - psFSR
-      # on the lepton id /iso 
+        # on the lepton id /iso 
       - muid
       - muiso
       - muon_ID
       - muon_iso
       - ele_reco 
       - ele_ID
-      # on double leptons (opposite sign, opposite flavour ) trigger 
+        # on double leptons (opposite sign, opposite flavour ) trigger 
       - elmutrig
       - mueltrig
-      # on single lepton trigger 
+        # on single lepton trigger 
       #- ele_trigger
       #- muon_trigger
-      # on pu
+        # on pu
       - puweights2018_Autumn18
-      # on the cross section : 1+xsec_uncert(pb)/xsec(pb)
+        # on ttbar weight 
+      - ttbarNormBin1
+      - ttbarNormBin2
+      - ttbarNormBin3
+        # on the cross section : 1+xsec_uncert(pb)/xsec(pb)
       #-TTToSemiLeptonicxsc: {type: const, value: , on: 'TTToSemiLeptonic'}
       #-TTToFullLeptonicxsc: {type: const, value: , on: 'TTToFullLeptonic'}
-      #- TTToHadronicxsc: {type: const, value: 1.0148209682 , on: ' TTToHadronic '}
+      #- TTToHadronicxsc: {type: const, value: , on: ' TTToHadronic '}
       - ST_tW_top_5fxsc: {type: const, value: 1.00080554761 , on: ' ST_tW_top_5f '}
       - ST_tW_antitop_5fxsc: {type: const, value: 1.00000178811 , on: ' ST_tW_antitop_5f '}
+      - DYJetsToLL_M-10to50-madgraphMLMxsc: {type: const, value: 1.00036457938013915244, on: 'DYJetsToLL_M-10to50-madgraphMLM'}  #uncer= 5.764 pb
+      #- DYJetsToLL_M-50-madgraphMLMxsc: { type: const, value: , on: 'DYJetsToLL_M-50-madgraphMLM'}
       - DYJetsToLL_M-50-amcatnloFXFXxsc: {type: const, value: 1.00433297595 , on: ' DYJetsToLL_M-50-amcatnloFXFX '}
       - W2JetsToLNuxsc: {type: const, value: 1.00289079842 , on: ' W2JetsToLNu '}
       - W3JetsToLNuxsc: {type: const, value: 1.00303476071 , on: ' W3JetsToLNu '}

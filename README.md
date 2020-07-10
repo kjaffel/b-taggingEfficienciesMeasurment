@@ -2,7 +2,7 @@
 Measurment of the b-tagging efficiencies with 2TagCount method in tt dilepton events at 13 TeV using NanoAOD
 FrameWork Bamboo: A high-level HEP analysis library for ROOT::RDataFrame
 for more information, take a look here: https://cp3.irmp.ucl.ac.be/~pdavid/bamboo/index.html
-The current code work with ; Fall17, Autmun 2018 and Summer19UL17 nanoAOD data. 
+- The current code work with ; Fall17, Autmun 2018 and Summer19UL17 nanoAOD data. 
 
 # Bamboo Installation(1st time):
 Important notes:
@@ -10,7 +10,7 @@ Important notes:
 - Follow the instructions here: https://cp3.irmp.ucl.ac.be/~pdavid/bamboo/install.html
 - Use the LCG_96bpython3 environment
 - You can ignore everything related to "SAMADhi"
-However I summed all what you need to start working on bamboo as follow, start by : 
+- However I summed all what you need to start working with bamboo in the commands just below: 
 ```
 mkdir bamboodev
 cd bamboodev
@@ -84,8 +84,8 @@ sbatch --array=_your_failed_jobs_seperated_by_comma --partition=cp3 --qos=cp3 --
 ```
 
 # For NanoAOD the content of the branches 
-[Fall17 V2 94X data](https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/data94Xv2_doc.html)
-[Fall17 V2 94X MC ](https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc94Xv2_doc.html)
+- [Fall17 V2 94X data](https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/data94Xv2_doc.html)
+- [Fall17 V2 94X MC ](https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc94Xv2_doc.html)
 
-[Summer19UL17 106X data](https://cms-nanoaod-integration.web.cern.ch/integration/master-106X/data106Xul17_doc.html)
-[Summer19UL17 106X MC](https://cms-nanoaod-integration.web.cern.ch/integration/master-106X/mc106Xul17_doc.html#MET)
+- [Summer19UL17 106X data](https://cms-nanoaod-integration.web.cern.ch/integration/master-106X/data106Xul17_doc.html)
+- [Summer19UL17 106X MC](https://cms-nanoaod-integration.web.cern.ch/integration/master-106X/mc106Xul17_doc.html#MET)
