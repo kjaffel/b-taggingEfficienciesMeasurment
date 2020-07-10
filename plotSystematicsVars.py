@@ -20,7 +20,7 @@ alternateSamples = ['isr', 'fsr', 'tune', 'hdamp']
 
 def beautify(s):
     if s == 'ttbar':
-        return r't#bar{t}'
+        return 't#bar{t}'
     if s == 'dy':
         return 'Drell-Yan'
     if s == 'SingleTop':
@@ -261,22 +261,17 @@ for proc in files:
             continue
 
     _tf = ROOT.TFile.Open(os.path.join(os.path.dirname(options.input), plotConfig["configuration"]["root"], proc))
-    print (_tf)
     for plot in plots:
         if options.plots:
             if plot not in options.plots:
                 continue
-        #if "DYweight" in plot or "DY_weight" in plot or "dxy" in plot or "dz" in plot or "miniPFRelIso_all" in plot or "sip3d" in plot or "Yield" in plot: # for now I don't have any sys for DY-rewighting 
-         #   continue
         nominal = _tf.Get(plot)
 
         for syst in systematics:
             if options.syst:
                 if syst not in options.syst:
                     continue
-
             up = _tf.Get(plot + "__" + syst + "up")
-            print( plot + "__" + syst + "up")
             if not (up and up.InheritsFrom("TH1")):
                 print(f"Could not find up variation for systematic {syst}, using nominal")
                 up = nominal
@@ -284,6 +279,7 @@ for proc in files:
             if not (down and down.InheritsFrom("TH1")):
                 print(f"Could not find down variation for systematic {syst}, using nominal")
                 down = nominal
+            print( syst)
 
             drawSystematic(nominal, up, down, plot, syst, proc.split(".root")[0], plots[plot], options.output)
 
