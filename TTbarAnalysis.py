@@ -522,7 +522,9 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                 "muel" : '\mu^+e^-',
                 "elmu" : 'e^+\mu^-'
                 }
-        
+
+        plotsToSum_twoTagCount = defaultdict(list)
+
         for channel, (leptons, cat) in categories.items():
 
             plots.append(Plot.make1D(f"{channel}_NOcutOnJetsLen_Jet_mulmtiplicity",
@@ -618,16 +620,20 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                 nTaggedB = op.rng_count(jets[:2], partial((lambda j,fun=None,val=None : fun(j) >= val), fun=t_bDisc[tagger], val=thresh))
                                 ## now two plots: two true b-jets -> n pass; two tagged: n true
                                 sel_twotag_pt_twoTaggedB = sel_twotag_pt.refine(f"{sel_twotag_pt.name}_twoTaggedB_{key}", cut=(op.rng_len(bjets_pass) == 2))
-                                plots += [
-                                    Plot.make1D(f"{channel}_Events_2l{nbrj}j_nbtagged_TruthFlav_2Beauty_{key}_{ptBin}",
+                                pNTagged_TwoTrue = Plot.make1D(f"{channel}_Events_2l{nbrj}j_nbtagged_TruthFlav_2Beauty_{key}_{ptBin}",
                                         nTaggedB, sel_twotag_pt_twoTrueB,
                                         EqBin(3, 0., 3.), title="N b-tags for events with two true b's",
-                                        plotopts=utils.getOpts(channel, **{"log-y": True})),
-                                    Plot.make1D(f"{channel}_Events_2l{nbrj}j_2btagged_TruthFlav_nBeauty_{key}_{ptBin}",
+                                        plotopts=utils.getOpts(channel, **{"log-y": True}))
+                                pNTrueB_TwoTagged = Plot.make1D(f"{channel}_Events_2l{nbrj}j_2btagged_TruthFlav_nBeauty_{key}_{ptBin}",
                                         nTrueB, sel_twotag_pt_twoTaggedB,
                                         EqBin(3, 0., 3.), title="N true b's for events with two btags",
-                                        plotopts=utils.getOpts(channel, **{"log-y": True})),
-                                    ]
+                                        plotopts=utils.getOpts(channel, **{"log-y": True}))
+                                plots += [ pNTagged_TwoTrue, pNTrueB_TwoTagged ]
+
+                                plotsToSum_twoTagCount[(nbrj, iPT, key, "TwoTrueB")].append(pNTagged_TwoTrue)
+                                plotsToSum_twoTagCount[(nbrj, iPT, key, "TwoTagged")].append(pNTrueB_TwoTagged)
+
+        ## TODO make summedPlots (over lepton flavour channels) of plotsToSum_twoTagCount
 
         if self.doYields:
             plots.extend(yield_object.returnPlots())
