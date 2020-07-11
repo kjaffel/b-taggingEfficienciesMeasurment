@@ -17,7 +17,7 @@ from bamboo.plots import EquidistantBinning as EqBin
 from bamboo.plots import VariableBinning as VarBin
 
 
-def MakeBtagEfficienciesMaps(jets, bjets, categories, era):
+def MakeBtagEfficienciesMaps(jets, categories, era):
 
     bFlavJets = op.select(jets, lambda j: j.hadronFlavour == 5)
     cFlavJets = op.select(jets, lambda j: j.hadronFlavour == 4)

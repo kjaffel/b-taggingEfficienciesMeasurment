@@ -41,66 +41,36 @@ def makeJetPlots(sel, jets, suffix, uname):
 
     return plots
     
-def makeBJetPlots(selections, bjets, wp, suffix, cut, uname):
-    
+def makeBJetPlots(sel, bb, key, channel, cut, suffix):
     plots = []
     binScaling=1
-    for key , sel in selections.items():
-        tagger=key.replace(wp, "")
-        bjets_ = safeget(bjets, tagger, wp)
-        for i in range(2):
-            plots.append(Plot.make1D(f"{uname}_{suffix}_bJet{i+1}_{cut}_pT_{key}".format(key=key), 
-                        bjets_[i].pt, sel, EqBin(60 // binScaling, 30., 730. - max(2, i) * 100), 
-                        title=f"{utils.getCounter(i+1)} bJet pT [GeV]", 
-                        plotopts=utils.getOpts(uname, **{"log-y": False})))
-                
-            plots.append(Plot.make1D(f"{uname}_{suffix}_bJet{i+1}_{cut}_eta_{key}".format(key=key), 
-                        bjets_[i].eta, sel, EqBin(50 // binScaling, -2.4, 2.4), 
-                        title=f"{utils.getCounter(i+1)} bJet eta", 
-                        plotopts=utils.getOpts(uname, **{"log-y": False})))
+    for i in range(2):
+        plots.append(Plot.make1D(f"{channel}_{suffix}_bJet{i+1}_{cut}_pT_{key}",
+                    bb[i].pt, sel, EqBin(60 // binScaling, 30., 730. - max(2, i) * 100),
+                    title=f"{utils.getCounter(i+1)} bJet pT [GeV]",
+                    plotopts=utils.getOpts(channel, **{"log-y": False})))
             
-            plots.append(Plot.make1D(f"{uname}_{suffix}_bJet{i+1}_{cut}_phi_{key}".format(key=key), 
-                        bjets_[i].phi, sel, EqBin(50 // binScaling, -3.1416, 3.1416), 
-                        title=f"{utils.getCounter(i+1)} bJet phi", 
-                        plotopts=utils.getOpts(uname, **{"log-y": False})))
+        plots.append(Plot.make1D(f"{channel}_{suffix}_bJet{i+1}_{cut}_eta_{key}",
+                    bb[i].eta, sel, EqBin(50 // binScaling, -2.4, 2.4),
+                    title=f"{utils.getCounter(i+1)} bJet eta",
+                    plotopts=utils.getOpts(channel, **{"log-y": False})))
         
-        jj_p4 = bjets_[0].p4+bjets_[1].p4
+        plots.append(Plot.make1D(f"{channel}_{suffix}_bJet{i+1}_{cut}_phi_{key}",
+                    bb[i].phi, sel, EqBin(50 // binScaling, -3.1416, 3.1416),
+                    title=f"{utils.getCounter(i+1)} bJet phi",
+                    plotopts=utils.getOpts(channel, **{"log-y": False})))
 
-        plots += [ Plot.make1D(f"{uname}_{suffix}{cut}_bb{nm}_{key}",
-                    var, sel, binning, title=f"di-bjet {title}", plotopts=utils.getOpts(uname))
-                    for nm, (var, binning, title) in {
-                        "PT" : (jj_p4.Pt() , EqBin(60 // binScaling, 0., 450.), "P_{T} [GeV]"),
-                        "Phi": (jj_p4.Phi(), EqBin(50 // binScaling, -3.1416, 3.1416), "#phi"),
-                        "Eta": (jj_p4.Eta(), EqBin(50 // binScaling, -3., 3.), "Eta")
-                    }.items()
-                ]
+    jj_p4 = bb[0].p4+bb[1].p4
 
-    return plots
+    plots += [ Plot.make1D(f"{channel}_{suffix}{cut}_bb{nm}_{key}",
+                var, sel, binning, title=f"di-bjet {title}", plotopts=utils.getOpts(channel))
+                for nm, (var, binning, title) in {
+                    "PT" : (jj_p4.Pt() , EqBin(60 // binScaling, 0., 450.), "P_{T} [GeV]"),
+                    "Phi": (jj_p4.Phi(), EqBin(50 // binScaling, -3.1416, 3.1416), "#phi"),
+                    "Eta": (jj_p4.Eta(), EqBin(50 // binScaling, -3., 3.), "Eta")
+                }.items()
+            ]
 
-def makeDiscriminatorPlots(sel, bjets, wp, btaggingWPs, suffix, cut, uname, era):
-    plots = []
-    for key in sel.keys():
-            
-        tagger=key.replace(wp, "")
-        bjets_ = safeget(bjets, tagger, wp)
-        idx = ( 0 if wp=="L" else ( 1 if wp=="M" else 2))
-        bin0 = btaggingWPs[tagger][era][idx]
-        for i in range(2):
-            if tagger =="DeepFlavour":
-                plots.append(Plot.make1D(f"{uname}_{suffix}_jet{i+1}_{cut}_discr_deepFlav{wp}", 
-                                bjets_[i].btagDeepFlavB,
-                                safeget(sel, "DeepFlavour{0}".format(wp)),
-                                EqBin(60, bin0, 1.), 
-                                title="DeepFlavourBDisc {0}".format(wp), 
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-            else:
-                plots.append(Plot.make1D(f"{uname}_{suffix}_jet{i+1}_{cut}_discr_deepCSV{wp}", 
-                                bjets_[i].btagDeepB,
-                                safeget(sel, "DeepCSV{0}".format(wp)),
-                                EqBin(60, bin0, 1.), 
-                                title= "DeepCSVBDisc {0}".format(wp), 
-                                plotopts=utils.getOpts(uname, **{"log-y": True})))
-        # Let's do L, M, T discr in one plot
     return plots
 
 def makeLeptonPlots(sel, leptons, suffix, uname):
@@ -131,25 +101,6 @@ def makeLeptonPlots(sel, leptons, suffix, uname):
 
     return plots
 
-def makeJetmultiplictyPlots(selection, jets, suffix, uname, ForBeauty=False):
-    binScaling=1
-    plots=[]
-    plots.append(Plot.make1D(f"{uname}_%s_Jet_mulmtiplicity"%suffix, op.rng_len(jets), selection, 
-                    EqBin(10, 0., 10.), title="Jet mulmtiplicity",
-                    plotopts=utils.getOpts(uname, **{"log-y": True})))
-    if ForBeauty:
-        wp = suffix.split('_')[-1]
-        cut = suffix.replace(wp, '')
-        print(wp, cut)
-        for key , sel in selection.items():
-            tagger=key.replace(wp, "")
-            bjets = safeget(jets, tagger, wp)
-            plots.append(Plot.make1D(f"{uname}_%s_%s%s_Jet_mulmtiplicity"%(cut, tagger, wp), op.rng_len(bjets), sel, 
-                            EqBin(10, 0., 10.), title="Jet mulmtiplicity",
-                            plotopts=utils.getOpts(uname, **{"log-y": True})))
-
-
-    return plots
 def makePrimaryANDSecondaryVerticesPlots(sel, t, uname):
     binScaling=1
     plots=[]
@@ -243,27 +194,21 @@ def makedeltaRPlots(sel, jets, leptons, suffix, uname):
                 plotopts=utils.getOpts(uname, **{"log-y": False})))
     return plots
 
-def makehistosforTTbarEstimation(selections, ll, bjets, wp, met, suffix, uname):
-    plots=[]
-    for key, sel in selections.items():
-        tagger = key.replace(wp, "")
-        bjets_ = safeget(bjets, tagger, wp)
-        bb = bjets[key.replace(wp, "")][wp]
-        plots += [ Plot.make1D(f"{nm}_{uname}_{suffix}_jets_{tagger}_btag{wp}_mll_and_{met}",
-            llbbVar, sel, binning, title=title, plotopts=utils.getOpts(uname))
-            for nm, (llbbVar, binning, title) in {
-                "jj_M"   : (op.invariant_mass(bb[0].p4+bb[1].p4), EqBin(40, 10., 1000.), "Mjj [GeV]"),
-                "lljj_M" : ((ll[0].p4+ll[1].p4+bb[0].p4+bb[1].p4).M(), EqBin(50, 100., 1500.), "Mlljj [GeV]"),
-                "ll_M"   : (op.invariant_mass(ll[0].p4+ll[1].p4), EqBin(60, 70., 120.), "Mll [GeV]"),
-                "jj_DR"  : (op.deltaR(bb[0].p4, bb[1].p4), EqBin(50, 0., 6.), "jj deltaR"),
-                "jj_pt"  : ((bjets_[0].p4 + bjets_[1].p4).Pt(), EqBin(50, 0., 450.), "dijets p_{T} [GeV]"),
-                "jet1_pt": (bb[0].pt, EqBin( 50, 20., 500.), "jet1 p_{T} [GeV]"),
-                "jet2_pt": (bb[1].pt, EqBin( 50, 20., 300.), "jet2 p_{T} [GeV]"),
-                "lep1_pt": (ll[0].pt, EqBin( 50, 20., 400.), "Leading Lepton p_{T} [GeV]"),
-                "lep2_pt": (ll[1].pt, EqBin( 50, 10., 200.), "Sub-leading Lepton p_{T} [GeV]"),
-                }.items()
-            ]
-    return plots
+def makehistosforTTbarEstimation(selection, ll, bb, uname, channel):
+    return [ Plot.make1D(f"{nm}_{channel}_{uname}",
+        llbbVar, selection, binning, title=title, plotopts=utils.getOpts(channel))
+        for nm, (llbbVar, binning, title) in {
+            "jj_M"   : (op.invariant_mass(bb[0].p4+bb[1].p4), EqBin(40, 10., 1000.), "Mjj [GeV]"),
+            "lljj_M" : ((ll[0].p4+ll[1].p4+bb[0].p4+bb[1].p4).M(), EqBin(50, 100., 1500.), "Mlljj [GeV]"),
+            "ll_M"   : (op.invariant_mass(ll[0].p4+ll[1].p4), EqBin(60, 70., 120.), "Mll [GeV]"),
+            "jj_DR"  : (op.deltaR(bb[0].p4, bb[1].p4), EqBin(50, 0., 6.), "jj deltaR"),
+            "jj_pt"  : ((bb[0].p4 + b[1].p4).Pt(), EqBin(50, 0., 450.), "dijets p_{T} [GeV]"),
+            "jet1_pt": (bb[0].pt, EqBin( 50, 20., 500.), "jet1 p_{T} [GeV]"),
+            "jet2_pt": (bb[1].pt, EqBin( 50, 20., 300.), "jet2 p_{T} [GeV]"),
+            "lep1_pt": (ll[0].pt, EqBin( 50, 20., 400.), "Leading Lepton p_{T} [GeV]"),
+            "lep2_pt": (ll[1].pt, EqBin( 50, 10., 200.), "Sub-leading Lepton p_{T} [GeV]"),
+            }.items()
+        ]
 
 def make2DMAPS(sel, jets, suffix, uname):
     plots=[]
