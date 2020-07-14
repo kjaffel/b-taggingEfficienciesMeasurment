@@ -642,7 +642,11 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                 plotsToSum_twoTagCount[(nbrj, iPT, key, "TwoTagged")].append(pNTrueB_TwoTagged)
                                 plotsToSum_twoTagCount[(nbrj, iPT, key, "NTaggedCrossTruth")].append(pNTrueBC_cross_NTagged)
 
-        ## TODO make summedPlots (over lepton flavour channels) of plotsToSum_twoTagCount
+        ## make summedPlots (over lepton flavour channels) of plotsToSum_twoTagCount
+        for pkey, t2plots in plotsToSum_twoTagCount.items():
+            nbrj, iPT, key, pName = pkey
+            ptBin = getPtLabel(iPT)
+            plots.append(SummedPlot(f"{pName}_2l{nbrj}_{key}_{ptBin}", t2plots))
 
         if self.doYields:
             plots.extend(yield_object.returnPlots())
