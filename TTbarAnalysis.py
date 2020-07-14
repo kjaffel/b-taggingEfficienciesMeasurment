@@ -611,15 +611,18 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                             sel_twotag_pt = sel2l2j_METCut.refine(f"{sel2l2j_METCut.name}_2Jets_{ptBin}ptBin_cut{nbrj}", cut=[ op.in_range(minpt, jets[0].pt, maxpt), op.in_range(minpt, jets[1].pt, maxpt) ])
                         if isMC:
                             nTrueB = op.rng_count(jets[:2], lambda j : j.hadronFlavour == 5)
+                            nTrueC = op.rng_count(jets[:2], lambda j : j.hadronFlavour == 4)
+                            trueBC_cat = op.multiSwitch((nTrueB != 0, nTrueB+1), (nTrueC != 0, op.c_int(1)), op.c_int(0))
                         else:
                             nTrueB = op.c_int(0)
+                            trueBC_cat = op.c_int(0)
                         sel_twotag_pt_twoTrueB = sel_twotag_pt.refine(f"{sel_twotag_pt.name}_twoTrueB", cut=(nTrueB == 2))
                         for tagger,workingPoints in bTaggingWPs_era[era].items():
                             for wp,thresh in workingPoints.items():
                                 key = f"{tagger}{wp}"
                                 nTaggedB = op.rng_count(jets[:2], partial((lambda j,fun=None,val=None : fun(j) >= val), fun=t_bDisc[tagger], val=thresh))
                                 ## now two plots: two true b-jets -> n pass; two tagged: n true
-                                sel_twotag_pt_twoTaggedB = sel_twotag_pt.refine(f"{sel_twotag_pt.name}_twoTaggedB_{key}", cut=(op.rng_len(bjets_pass) == 2))
+                                sel_twotag_pt_twoTaggedB = sel_twotag_pt.refine(f"{sel_twotag_pt.name}_twoTaggedB_{key}", cut=(nTaggedB == 2))
                                 pNTagged_TwoTrue = Plot.make1D(f"{channel}_Events_2l{nbrj}j_nbtagged_TruthFlav_2Beauty_{key}_{ptBin}",
                                         nTaggedB, sel_twotag_pt_twoTrueB,
                                         EqBin(3, 0., 3.), title="N b-tags for events with two true b's",
@@ -628,10 +631,15 @@ class TTbarDileptonMeasurment(NanoAODHistoModule):
                                         nTrueB, sel_twotag_pt_twoTaggedB,
                                         EqBin(3, 0., 3.), title="N true b's for events with two btags",
                                         plotopts=utils.getOpts(channel, **{"log-y": True}))
-                                plots += [ pNTagged_TwoTrue, pNTrueB_TwoTagged ]
+                                pNTrueBC_cross_NTagged = Plot.make1D(f"{channel}_Events_2l{nbrj}j_nBtagged_cross_TruthFlav_{key}_{ptBin}",
+                                        nTaggedB*4+trueBC_cat, sel_twotag_pt,
+                                        EqBin(12, 0., 12.), title="N b-tags (cross MC truth)",
+                                        plotopts=utils.getOpts(channel, **{"log-y": True}))
+                                plots += [ pNTagged_TwoTrue, pNTrueB_TwoTagged, pNTrueBC_cross_NTagged ]
 
                                 plotsToSum_twoTagCount[(nbrj, iPT, key, "TwoTrueB")].append(pNTagged_TwoTrue)
                                 plotsToSum_twoTagCount[(nbrj, iPT, key, "TwoTagged")].append(pNTrueB_TwoTagged)
+                                plotsToSum_twoTagCount[(nbrj, iPT, key, "NTaggedCrossTruth")].append(pNTrueBC_cross_NTagged)
 
         ## TODO make summedPlots (over lepton flavour channels) of plotsToSum_twoTagCount
 
