@@ -8,6 +8,7 @@ from bamboo import scalefactors
 import logging
 logger = logging.getLogger("ttbar Plotter")
 
+from collections import defaultdict
 from itertools import chain
 from functools import partial
 import os.path
