@@ -4,19 +4,15 @@ import math
 import argparse
 import ROOT
 
-# For SF computed by ttH located in https://gitlab.cern.ch/ttH/reference/tree/trigger_sf_dir/scale_factors/triggers
-
 parser = argparse.ArgumentParser()
-parser.add_argument('file', help='ROOT file containing Muon scale factors')
+parser.add_argument('file', help='ROOT file containing Electron scale factors')
 parser.add_argument('-s', '--suffix', help='Suffix to append to output file')
 
 args = parser.parse_args()
 
 f = ROOT.TFile.Open(args.file)
 
-TRIGGER = "IsoMu24"
-
-h = f.Get(TRIGGER + "_PtEtaBins/pt_abseta_ratio")
+h = f.Get("h_lep1Pt_lep2Pt_Step3")
 
 # Get binning
 eta_binning = []
@@ -53,7 +49,7 @@ for i in range(0, len(eta_binning) - 1):
     json_content_data.append(eta_data)
 
 # Save JSON file
-filename = 'Muon_%s_%s.json' % (TRIGGER, args.suffix)
+filename = 'Electron_%s.json' % (args.suffix)
 with open(filename, 'w') as j:
     import json
     json.dump(json_content, j, indent=2)

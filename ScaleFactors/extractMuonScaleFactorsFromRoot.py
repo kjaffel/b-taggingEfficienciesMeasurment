@@ -4,13 +4,15 @@ import math
 import argparse
 import ROOT
 
+def format_eta_bin(eta_bin):
+    return 'ptabseta<%.1f' % (eta_bin[1]) if (eta_bin[0] == 0) else 'ptabseta%.1f-%.1f' % (eta_bin[0], eta_bin[1])
+
 parser = argparse.ArgumentParser()
-parser.add_argument('file', help='ROOT file containing electron scale factors')
+parser.add_argument('file', help='ROOT file containing muons  scale factors')
 parser.add_argument('-s', '--suffix', help='Suffix to append at the end of the output filename', required=True)
 
 args = parser.parse_args()
 
-# Moriond17: last pt bin is the same as the previous one, but with 100% error and should be ignored
 IGNORE_LAST_PT_BIN = False
 
 f = ROOT.TFile.Open(args.file)
@@ -18,15 +20,8 @@ f = ROOT.TFile.Open(args.file)
 for key in f.GetListOfKeys():
     wp = key.GetName()
 
-    if not 'SF' in wp:
-        continue
-
-    if not '2D' in wp:
-        continue
-
     h = f.Get(wp)
 
-    # Get binning
     eta_binning = []
     for i in range(1, h.GetXaxis().GetNbins() + 1):
         if len(eta_binning) == 0:
@@ -63,8 +58,8 @@ for key in f.GetListOfKeys():
 
         json_content_data.append(eta_data)
 
-    # Save JSON file
-    filename = 'Electron_%s_%s.json' % (wp, args.suffix)
+  
+    filename = 'Muon_%s_%s.json' % (wp, args.suffix)
     with open(filename, 'w') as j:
         import json
         json.dump(json_content, j, indent=2)
