@@ -51,25 +51,46 @@ class METcorrection(object):
 
         elif(era=='2017'):
             #these are the corrections for v2 MET recipe (currently recommended for 2017)
-            if isMC:
-                xcorr = (0.217714, -0.493361)
-                ycorr = (-0.177058, 0.336648)
-            else: 
-                if '2017B' in sample:
-                    xcorr = ( 0.19563, -1.51859)
-                    ycorr = (-0.306987, 1.84713)
-                elif '2017C' in sample:
-                    xcorr = ( 0.161661, -0.589933)
-                    ycorr = (-0.233569,  0.995546)
-                elif '2017D' in sample:
-                    xcorr = ( 0.180911, -1.23553)
-                    ycorr = (-0.240155,  1.27449)
-                elif '2017E' in sample:
-                    xcorr = ( 0.149494, -0.901305)
-                    ycorr = (-0.178212,  0.535537)
+            if '_UL17' in sample:
+                if isMC:
+                    xcorr= (0.300155, -1.90608)
+                    ycorr= (-0.300213, 2.02232)
                 else:
-                    xcorr = ( 0.165154, -1.02018)
-                    ycorr = (-0.253794, -0.75776)
+                    if '2017B' in sample:
+                        xcorr = (0.211161, -0.419333)
+                        ycorr = (-0.251789, 1.28089)
+                    elif '2017C' in sample:
+                        xcorr = (0.185184, 0.164009)
+                        ycorr = (-0.200941, 0.56853)
+                    elif '2017D' in sample:
+                        xcorr = (0.201606, -0.426502)
+                        ycorr = (-0.188208, 0.58313)
+                    elif '2017E' in sample:
+                        xcorr = (0.162472, -0.176329)
+                        ycorr = (-0.138076, 0.250239)
+                    elif '2017F' in sample:
+                        xcorr = (0.210639, -0.72934)
+                        ycorr = (-0.198626, -1.028)
+            else:
+                if isMC:
+                    xcorr = (0.217714, -0.493361)
+                    ycorr = (-0.177058, 0.336648)
+                else: 
+                    if '2017B' in sample:
+                        xcorr = ( 0.19563, -1.51859)
+                        ycorr = (-0.306987, 1.84713)
+                    elif '2017C' in sample:
+                        xcorr = ( 0.161661, -0.589933)
+                        ycorr = (-0.233569,  0.995546)
+                    elif '2017D' in sample:
+                        xcorr = ( 0.180911, -1.23553)
+                        ycorr = (-0.240155,  1.27449)
+                    elif '2017E' in sample:
+                        xcorr = ( 0.149494, -0.901305)
+                        ycorr = (-0.178212,  0.535537)
+                    else:
+                        xcorr = ( 0.165154, -1.02018)
+                        ycorr = (-0.253794, -0.75776)
         else:
             if isMC:
                 xcorr = (-0.296713,  0.141506)
